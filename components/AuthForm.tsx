@@ -20,6 +20,8 @@ import {
 import { auth } from '@/firebase/client';
 import { signIn, signInWithGoogle, signUp } from '@/lib/actions/auth.action';
 import { FcGoogle } from 'react-icons/fc';
+import { useState } from 'react';
+import SpinnerLoader from './ui/loader';
 
 const authFormSchema = (type: FormType) => {
   return z.object({
@@ -32,6 +34,7 @@ const authFormSchema = (type: FormType) => {
 const AuthForm = ({ type }: { type: FormType }) => {
   const router = useRouter();
   const formSchema = authFormSchema(type);
+  const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -43,6 +46,7 @@ const AuthForm = ({ type }: { type: FormType }) => {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsLoading(true);
     try {
       if (type === 'sign-up') {
         const { name, email, password } = values;
@@ -89,26 +93,36 @@ const AuthForm = ({ type }: { type: FormType }) => {
     } catch (error) {
       console.error(error);
       toast.error(`There was an error: ${error}`);
+    } finally {
+      setIsLoading(false);
     }
   }
 
   const handleSignInWithGoogle = async () => {
-    const provider = new GoogleAuthProvider();
-    const result = await signInWithPopup(auth, provider);
-    const idToken = await result.user.getIdToken();
-    const response = await signInWithGoogle({
-      idToken,
-      email: result.user.email as string,
-      name: result.user.displayName as string,
-      uid: result.user.uid,
-      photoURL: result.user.photoURL,
-    });
-    if (!response?.success) {
-      toast.error(response?.message);
-      return;
+    setIsLoading(true);
+
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const idToken = await result.user.getIdToken();
+      const response = await signInWithGoogle({
+        idToken,
+        email: result.user.email as string,
+        name: result.user.displayName as string,
+        uid: result.user.uid,
+        photoURL: result.user.photoURL,
+      });
+      if (!response?.success) {
+        toast.error(response?.message);
+        return;
+      }
+      toast.success('Signed in with Google successfully.');
+      router.push('/');
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setIsLoading(false);
     }
-    toast.success('Signed in with Google successfully.');
-    router.push('/');
   };
 
   const isSignIn = type === 'sign-in';
@@ -121,44 +135,49 @@ const AuthForm = ({ type }: { type: FormType }) => {
           <h2 className='text-primary-100'>CareerPilot</h2>
         </div>
         <h3 className='text-center'>Practice job interviews with AI</h3>
-        <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className='w-full space-y-6 mt-4 form'
-          >
-            {!isSignIn && (
+
+        {isLoading ? (
+          <SpinnerLoader />
+        ) : (
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit(onSubmit)}
+              className='w-full space-y-6 mt-4 form'
+            >
+              {!isSignIn && (
+                <FormField
+                  control={form.control}
+                  name='name'
+                  label='Name'
+                  placeholder='Your Name'
+                />
+              )}
               <FormField
                 control={form.control}
-                name='name'
-                label='Name'
-                placeholder='Your Name'
+                name='email'
+                label='Email'
+                placeholder='Your email address'
+                type='email'
               />
-            )}
-            <FormField
-              control={form.control}
-              name='email'
-              label='Email'
-              placeholder='Your email address'
-              type='email'
-            />
-            <FormField
-              control={form.control}
-              name='password'
-              label='Password'
-              placeholder='Enter your password'
-              type='password'
-            />
+              <FormField
+                control={form.control}
+                name='password'
+                label='Password'
+                placeholder='Enter your password'
+                type='password'
+              />
 
-            <Button className='btn' type='submit'>
-              {isSignIn ? 'Sign in' : 'Create an Account'}
-            </Button>
+              <Button className='btn' type='submit'>
+                {isSignIn ? 'Sign in' : 'Create an Account'}
+              </Button>
 
-            <Button className='btn' onClick={handleSignInWithGoogle}>
-              <FcGoogle />
-              {isSignIn ? 'Sign in with Google' : 'Sign up with Google'}
-            </Button>
-          </form>
-        </Form>
+              <Button className='btn' onClick={handleSignInWithGoogle}>
+                <FcGoogle />
+                {isSignIn ? 'Sign in with Google' : 'Sign up with Google'}
+              </Button>
+            </form>
+          </Form>
+        )}
 
         <p className='text-center'>
           {isSignIn ? "Don't have an account?" : 'Already have an account?'}

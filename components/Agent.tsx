@@ -8,6 +8,7 @@ import { vapi } from '@/lib/vapi.sdk';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
+import SpinnerLoader from './ui/loader';
 
 enum CallStatus {
   INACTIVE = 'INACTIVE',
@@ -29,6 +30,7 @@ const Agent = ({
   questions,
 }: AgentProps) => {
   const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -62,7 +64,10 @@ const Agent = ({
     const onSpeechStart = () => setIsSpeaking(true);
     const onSpeechEnd = () => setIsSpeaking(false);
 
-    const onError = (error: Error) => console.log('Error', error);
+    const onError = (error: Error) => {
+      console.error('Error', error);
+      router.push('/');
+    };
 
     vapi.on('call-start', onCallStart);
     vapi.on('call-end', onCallEnd);
@@ -83,6 +88,7 @@ const Agent = ({
 
   useEffect(() => {
     const handleGenerateFeedback = async (messages: SavedMessage[]) => {
+      setIsLoading(true);
       const { success, feedbackId: id } = await createFeedback({
         interviewId: interviewId!,
         userId: userId!,
@@ -95,6 +101,7 @@ const Agent = ({
         console.error('Error saving feedback');
         router.push('/');
       }
+      setIsLoading(false);
     };
 
     if (callStatus === CallStatus.FINISHED) {
@@ -141,6 +148,10 @@ const Agent = ({
 
   const isCallInactiveOrFinished =
     callStatus === CallStatus.INACTIVE || callStatus === CallStatus.FINISHED;
+
+  if (isLoading) {
+    return <SpinnerLoader />;
+  }
 
   return (
     <>

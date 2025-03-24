@@ -7,40 +7,51 @@ import { generateObject } from 'ai';
 
 export async function getInterviewByUserId(
   userId: string
-): Promise<Interview[] | null> {
-  // first get the interview ids from the feedback collection
-  const feedback = await db
-    .collection('feedback')
-    .where('userId', '==', userId)
-    .get();
+): Promise<Interview[]> {
+  try {
+    const feedbackSnapshot = await db
+      .collection('feedback')
+      .where('userId', '==', userId)
+      .get();
 
-  const interviewIds = feedback.docs.map((doc) => doc.data().interviewId);
+    const feedbackInterviewIds = feedbackSnapshot.docs.map(
+      (doc) => doc.data().interviewId
+    );
 
-  const interviews = await db
-    .collection('interviews')
-    .where('userId', '==', userId)
-    .orderBy('createdAt', 'desc')
-    .get();
+    const interviewsSnapshot = await db
+      .collection('interviews')
+      .where('userId', '==', userId)
+      .orderBy('createdAt', 'desc')
+      .get();
 
-  const interviewsFromFeedback = await Promise.all(
-    interviewIds.map(async (id) => {
-      const interview = await db.collection('interviews').doc(id).get();
-      return interview;
-    })
-  );
+    const interviewsWithFeedback = interviewsSnapshot.docs.filter((doc) =>
+      feedbackInterviewIds.includes(doc.id)
+    );
+    const interviewsWithoutFeedback = interviewsSnapshot.docs.filter(
+      (doc) => !feedbackInterviewIds.includes(doc.id)
+    );
 
-  const allInterviews = [...interviews.docs, ...interviewsFromFeedback];
-  return allInterviews
-    .map((doc) => {
-      if (!doc) return null;
-      return {
+    const updatedInterviewsWithFeedback = await Promise.all(
+      interviewsWithFeedback.map(async (doc) => {
+        return await db.collection('interviews').doc(doc.id).get();
+      })
+    );
+
+    const allInterviewDocs = [
+      ...updatedInterviewsWithFeedback,
+      ...interviewsWithoutFeedback,
+    ];
+
+    return allInterviewDocs
+      .filter((doc) => doc.exists)
+      .map((doc) => ({
         id: doc.id,
         ...doc.data(),
-      };
-    })
-    .filter(
-      (interview): interview is Interview => interview !== null
-    ) as Interview[];
+      })) as Interview[];
+  } catch (error) {
+    console.error('Error fetching interviews:', error);
+    return [];
+  }
 }
 
 export async function getLatestInterviews(
