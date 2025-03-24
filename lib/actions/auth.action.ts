@@ -81,6 +81,59 @@ export async function signIn(params: SignInParams) {
   }
 }
 
+export async function signOut() {
+  const cookieStore = await cookies();
+  cookieStore.delete('session');
+
+  return {
+    success: true,
+    message: 'Signed out successfully.',
+  };
+}
+
+export async function signInWithGoogle(params: {
+  idToken: string;
+  email: string;
+  name: string;
+  uid: string;
+  photoURL: string | null;
+}) {
+  const { idToken, email, name, uid, photoURL } = params;
+
+  try {
+    const userRef = db.collection('users').doc(uid);
+    const userRecord = await userRef.get();
+
+    const userData = {
+      name,
+      email,
+      photoURL,
+    };
+
+    if (!userRecord.exists) {
+      await userRef.set(userData);
+    } else {
+      const existingData = userRecord.data();
+      if (!existingData?.photoURL) {
+        await userRef.update({ photoURL });
+      }
+    }
+
+    await setSessionCookie(idToken);
+
+    return {
+      success: true,
+      message: 'Signed in with Google successfully.',
+    };
+  } catch (error) {
+    console.error('Error handling Google sign-in:', error);
+    return {
+      success: false,
+      message: 'Failed to authenticate with Google. Please try again.',
+    };
+  }
+}
+
 export async function setSessionCookie(idToken: string) {
   const cookieStore = await cookies();
 
@@ -117,7 +170,7 @@ const getCachedUser = async (uid: string): Promise<User | null> => {
     }
   );
 
-  return cached(); // Call it here to trigger the cache
+  return cached();
 };
 
 export async function getCurrentUser(): Promise<User | null> {

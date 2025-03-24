@@ -1,6 +1,7 @@
 'use client';
 
 import { interviewer } from '@/constants';
+import { getCurrentUser } from '@/lib/actions/auth.action';
 import { createFeedback } from '@/lib/actions/general.action';
 import { cn } from '@/lib/utils';
 import { vapi } from '@/lib/vapi.sdk';
@@ -27,11 +28,21 @@ const Agent = ({
   interviewId,
   questions,
 }: AgentProps) => {
+  const [user, setUser] = useState<User | null>(null);
   const router = useRouter();
 
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [callStatus, setCallStatus] = useState<CallStatus>(CallStatus.INACTIVE);
   const [messages, setMessages] = useState<SavedMessage[]>([]);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const currentUser = await getCurrentUser();
+      setUser(currentUser);
+    };
+
+    fetchUser();
+  }, []);
 
   useEffect(() => {
     const onCallStart = () => setCallStatus(CallStatus.ACTIVE);
@@ -150,7 +161,7 @@ const Agent = ({
         <div className='card-border'>
           <div className='card-content'>
             <Image
-              src='/user-avatar.png'
+              src={user?.photoURL || '/robot.png'}
               alt='user avatar'
               width={540}
               height={540}

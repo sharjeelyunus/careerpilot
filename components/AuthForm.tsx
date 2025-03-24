@@ -13,10 +13,13 @@ import FormField from './FormField';
 import { useRouter } from 'next/navigation';
 import {
   createUserWithEmailAndPassword,
+  GoogleAuthProvider,
   signInWithEmailAndPassword,
+  signInWithPopup,
 } from 'firebase/auth';
 import { auth } from '@/firebase/client';
-import { signIn, signUp } from '@/lib/actions/auth.action';
+import { signIn, signInWithGoogle, signUp } from '@/lib/actions/auth.action';
+import { FcGoogle } from 'react-icons/fc';
 
 const authFormSchema = (type: FormType) => {
   return z.object({
@@ -89,6 +92,25 @@ const AuthForm = ({ type }: { type: FormType }) => {
     }
   }
 
+  const handleSignInWithGoogle = async () => {
+    const provider = new GoogleAuthProvider();
+    const result = await signInWithPopup(auth, provider);
+    const idToken = await result.user.getIdToken();
+    const response = await signInWithGoogle({
+      idToken,
+      email: result.user.email as string,
+      name: result.user.displayName as string,
+      uid: result.user.uid,
+      photoURL: result.user.photoURL,
+    });
+    if (!response?.success) {
+      toast.error(response?.message);
+      return;
+    }
+    toast.success('Signed in with Google successfully.');
+    router.push('/');
+  };
+
   const isSignIn = type === 'sign-in';
 
   return (
@@ -126,10 +148,14 @@ const AuthForm = ({ type }: { type: FormType }) => {
               placeholder='Enter your password'
               type='password'
             />
-            {/* <p>Email</p>
-            <p>Password</p> */}
+
             <Button className='btn' type='submit'>
               {isSignIn ? 'Sign in' : 'Create an Account'}
+            </Button>
+
+            <Button className='btn' onClick={handleSignInWithGoogle}>
+              <FcGoogle />
+              {isSignIn ? 'Sign in with Google' : 'Sign up with Google'}
             </Button>
           </form>
         </Form>

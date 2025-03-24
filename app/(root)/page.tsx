@@ -10,7 +10,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import React from 'react';
 
-const Page = async () => {
+const HomePage = async () => {
   const user = await getCurrentUser();
   const [userInterviews, latestInterviews] = await Promise.all([
     user?.id ? await getInterviewByUserId(user.id) : [],
@@ -80,4 +80,4 @@ const Page = async () => {
   );
 };
 
-export default Page;
+export default HomePage;
