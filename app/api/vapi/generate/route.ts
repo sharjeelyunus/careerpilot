@@ -1,6 +1,5 @@
 import { generateText } from 'ai';
 import { google } from '@ai-sdk/google';
-import { getRandomInterviewCover } from '@/lib/utils';
 import { db } from '@/firebase/admin';
 
 export async function GET() {
@@ -44,7 +43,6 @@ export async function POST(request: Request) {
       questions: JSON.parse(questions),
       userId: userid,
       finalized: true,
-      coverImage: getRandomInterviewCover(),
       createdAt: new Date().toISOString(),
     };
 
