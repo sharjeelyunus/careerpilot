@@ -1,6 +1,7 @@
 'use client';
 
 import { interviewer } from '@/constants';
+import { createFeedback } from '@/lib/actions/general.action';
 import { cn } from '@/lib/utils';
 import { vapi } from '@/lib/vapi.sdk';
 import Image from 'next/image';
@@ -31,21 +32,6 @@ const Agent = ({
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [callStatus, setCallStatus] = useState<CallStatus>(CallStatus.INACTIVE);
   const [messages, setMessages] = useState<SavedMessage[]>([]);
-
-  const handleGenerateFeedback = async (messages: SavedMessage[]) => {
-    // TODO: Server action to generate feedback
-    const { success, id } = {
-      success: true,
-      id: 'feedback-id',
-    };
-
-    if (success && id) {
-      router.push(`/interview/${interviewId}/feedback`);
-    } else {
-      console.error('Error saving feedback');
-      router.push('/');
-    }
-  };
 
   useEffect(() => {
     const onCallStart = () => setCallStatus(CallStatus.ACTIVE);
@@ -85,6 +71,21 @@ const Agent = ({
   }, []);
 
   useEffect(() => {
+    const handleGenerateFeedback = async (messages: SavedMessage[]) => {
+      const { success, feedbackId: id } = await createFeedback({
+        interviewId: interviewId!,
+        userId: userId!,
+        transcript: messages,
+      });
+
+      if (success && id) {
+        router.push(`/interview/${interviewId}/feedback`);
+      } else {
+        console.error('Error saving feedback');
+        router.push('/');
+      }
+    };
+
     if (callStatus === CallStatus.FINISHED) {
       if (type === 'generate') {
         router.push('/');
@@ -92,7 +93,7 @@ const Agent = ({
         handleGenerateFeedback(messages);
       }
     }
-  }, [messages, callStatus, type, userId, router]);
+  }, [messages, callStatus, type, userId, router, interviewId]);
 
   const handleCall = async () => {
     setCallStatus(CallStatus.CONNECTING);
