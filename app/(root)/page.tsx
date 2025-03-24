@@ -26,7 +26,7 @@ const HomePage = async () => {
         <div className='flex flex-col gap-6 max-w-lg'>
           <h2>Get Interview-Ready with AI-Powered Practice & Feedback</h2>
           <p className='text-lg'>
-            Practice on read interview questions & get instant feedback
+            Practice on ready interview questions & get instant feedback
           </p>
           <Button asChild className='btn-primary max-sm:w-full'>
             <Link href={user?.id ? '/interview' : 'sign-in'}>
