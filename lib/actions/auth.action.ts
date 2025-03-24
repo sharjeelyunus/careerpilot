@@ -1,6 +1,7 @@
 'use server';
 
 import { auth, db } from '@/firebase/admin';
+import { unstable_cache } from 'next/cache';
 import { cookies } from 'next/headers';
 
 const ONE_WEEK = 60 * 60 * 24 * 7;
@@ -96,6 +97,29 @@ export async function setSessionCookie(idToken: string) {
   });
 }
 
+const _fetchUserFromDB = async (uid: string): Promise<User | null> => {
+  const userRecord = await db.collection('users').doc(uid).get();
+  if (!userRecord.exists) return null;
+
+  return {
+    ...userRecord.data(),
+    id: userRecord.id,
+  } as User;
+};
+
+// Return a cached version *per UID*
+const getCachedUser = async (uid: string): Promise<User | null> => {
+  const cached = unstable_cache(
+    async () => _fetchUserFromDB(uid),
+    [`user-${uid}`],
+    {
+      revalidate: 3600,
+    }
+  );
+
+  return cached(); // Call it here to trigger the cache
+};
+
 export async function getCurrentUser(): Promise<User | null> {
   const cookieStore = await cookies();
   const sessionCookie = cookieStore.get('session')?.value;
@@ -103,19 +127,9 @@ export async function getCurrentUser(): Promise<User | null> {
 
   try {
     const decodedClaims = await auth.verifySessionCookie(sessionCookie, true);
-
-    const userRecord = await db
-      .collection('users')
-      .doc(decodedClaims.uid)
-      .get();
-    if (!userRecord.exists) return null;
-
-    return {
-      ...userRecord.data(),
-      id: userRecord.id,
-    } as User;
+    return await getCachedUser(decodedClaims.uid);
   } catch (error) {
-    console.log(error);
+    console.error('Error fetching user:', error);
     return null;
   }
 }
