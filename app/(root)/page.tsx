@@ -5,6 +5,7 @@ import {
   getInterviewByUserId,
   getLatestInterviews,
 } from '@/lib/actions/general.action';
+import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import Link from 'next/link';
 import React from 'react';
@@ -13,7 +14,7 @@ const Page = async () => {
   const user = await getCurrentUser();
   const [userInterviews, latestInterviews] = await Promise.all([
     user?.id ? await getInterviewByUserId(user.id) : [],
-    user?.id ? await getLatestInterviews({ userId: user.id }) : [],
+    await getLatestInterviews({ userId: user?.id }),
   ]);
 
   const hasPastInterviews = (userInterviews ?? []).length > 0;
@@ -28,7 +29,9 @@ const Page = async () => {
             Practice on read interview questions & get instant feedback
           </p>
           <Button asChild className='btn-primary max-sm:w-full'>
-            <Link href='/interview'>Start an Interview</Link>
+            <Link href={user?.id ? '/interview' : 'sign-in'}>
+              Start an Interview
+            </Link>
           </Button>
         </div>
         <Image
@@ -40,7 +43,9 @@ const Page = async () => {
         />
       </section>
 
-      <section className='flex flex-col gap-6 mt-8'>
+      <section
+        className={cn('flex flex-col gap-6 mt-8', !user?.id && 'hidden')}
+      >
         <h2>Your Interviews</h2>
 
         <div className='interviews-section'>
@@ -60,7 +65,11 @@ const Page = async () => {
         <div className='interviews-section'>
           {hasUpcomingInterviews ? (
             latestInterviews?.map((interview) => (
-              <InterviewCard key={interview.id} {...interview} />
+              <InterviewCard
+                key={interview.id}
+                {...interview}
+                userId={user?.id}
+              />
             ))
           ) : (
             <p>There are no new interviews available</p>
