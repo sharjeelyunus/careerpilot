@@ -84,7 +84,7 @@ const Agent = ({
       vapi.off('speech-end', onSpeechEnd);
       vapi.off('error', onError);
     };
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     const handleGenerateFeedback = async (messages: SavedMessage[]) => {
