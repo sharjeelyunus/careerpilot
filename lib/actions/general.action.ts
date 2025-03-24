@@ -8,16 +8,39 @@ import { generateObject } from 'ai';
 export async function getInterviewByUserId(
   userId: string
 ): Promise<Interview[] | null> {
+  // first get the interview ids from the feedback collection
+  const feedback = await db
+    .collection('feedback')
+    .where('userId', '==', userId)
+    .get();
+
+  const interviewIds = feedback.docs.map((doc) => doc.data().interviewId);
+
   const interviews = await db
     .collection('interviews')
     .where('userId', '==', userId)
     .orderBy('createdAt', 'desc')
     .get();
 
-  return interviews.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  })) as Interview[];
+  const interviewsFromFeedback = await Promise.all(
+    interviewIds.map(async (id) => {
+      const interview = await db.collection('interviews').doc(id).get();
+      return interview;
+    })
+  );
+
+  const allInterviews = [...interviews.docs, ...interviewsFromFeedback];
+  return allInterviews
+    .map((doc) => {
+      if (!doc) return null;
+      return {
+        id: doc.id,
+        ...doc.data(),
+      };
+    })
+    .filter(
+      (interview): interview is Interview => interview !== null
+    ) as Interview[];
 }
 
 export async function getLatestInterviews(
