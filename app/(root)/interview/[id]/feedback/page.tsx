@@ -1,3 +1,5 @@
+'use client';
+
 import dayjs from 'dayjs';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -9,18 +11,39 @@ import {
 } from '@/lib/actions/general.action';
 import { Button } from '@/components/ui/button';
 import { getCurrentUser } from '@/lib/actions/auth.action';
+import { useEffect, useState } from 'react';
+import SpinnerLoader from '@/components/ui/loader';
 
-const Feedback = async ({ params }: RouteParams) => {
-  const { id } = await params;
-  const user = await getCurrentUser();
+const Feedback = ({ params }: RouteParams) => {
+  const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const [interview, setInterview] = useState<Interview | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const interview = await getInterviewById(id);
-  if (!interview) redirect('/');
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      const { id } = await params;
+      const user = await getCurrentUser();
 
-  const feedback = await getFeedbackByInterviewId({
-    interviewId: id,
-    userId: user?.id || '',
-  });
+      const fetchedInterview = await getInterviewById(id);
+      if (!fetchedInterview) redirect('/');
+
+      const fetchedFeedback = await getFeedbackByInterviewId({
+        interviewId: id,
+        userId: user?.id || '',
+      });
+
+      setInterview(fetchedInterview);
+      setFeedback(fetchedFeedback);
+      setIsLoading(false);
+    };
+
+    fetchData();
+  }, [params]);
+
+  if (isLoading) return <SpinnerLoader />;
+
+  if (!interview || !feedback) return null;
 
   return (
     <section className='section-feedback'>
@@ -103,7 +126,7 @@ const Feedback = async ({ params }: RouteParams) => {
 
         <Button className='btn-primary flex-1'>
           <Link
-            href={`/interview/${id}`}
+            href={`/interview/${interview.id}`}
             className='flex w-full justify-center'
           >
             <p className='text-sm font-semibold text-black text-center'>
