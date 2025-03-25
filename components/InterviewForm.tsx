@@ -50,8 +50,9 @@ const InterviewForm = () => {
       role: values.role,
       type: values.type,
       level: values.level,
-      techstack: values.techstack.split(','),
+      techstack: values.techstack,
       amount: values.amount,
+      userid: user?.id || '',
     });
 
     if (response.success) {

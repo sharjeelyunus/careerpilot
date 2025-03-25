@@ -4,6 +4,7 @@ import { feedbackSchema } from '@/constants';
 import { db } from '@/firebase/admin';
 import { google } from '@ai-sdk/google';
 import { generateObject } from 'ai';
+import axios from 'axios';
 
 export async function getInterviewByUserId(
   userId: string
@@ -172,15 +173,7 @@ export async function getFeedbackByInterviewId(
 export async function generateInterview(params: GenerateInterviewParams) {
   const api = `${process.env.NEXT_PUBLIC_BASE_URL}/api/vapi/generate`;
 
-  const response = await fetch(api, {
-    method: 'POST',
-    body: JSON.stringify(params),
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
+  const response = await axios.post(api, params);
 
-  const data = await response.json();
-
-  return data;
+  return response.data;
 }

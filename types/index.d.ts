@@ -103,6 +103,7 @@ interface GenerateInterviewParams {
   role: string;
   type: string;
   level: string;
-  techstack: string[];
+  techstack: string;
   amount: number;
+  userid: string;
 }
