@@ -168,3 +168,19 @@ export async function getFeedbackByInterviewId(
     ...feedbackDoc.data(),
   } as Feedback;
 }
+
+export async function generateInterview(params: GenerateInterviewParams) {
+  const api = `${process.env.NEXT_PUBLIC_BASE_URL}/api/vapi/generate`;
+
+  const response = await fetch(api, {
+    method: 'POST',
+    body: JSON.stringify(params),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  const data = await response.json();
+
+  return data;
+}

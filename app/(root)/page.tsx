@@ -1,5 +1,7 @@
 import InterviewCard from '@/components/InterviewCard';
-import { Button } from '@/components/ui/button';
+import InterviewForm from '@/components/InterviewForm';
+import { Modal } from '@/components/Modal';
+// import { Button } from '@/components/ui/button';
 import { getCurrentUser } from '@/lib/actions/auth.action';
 import {
   getInterviewByUserId,
@@ -7,7 +9,7 @@ import {
 } from '@/lib/actions/general.action';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
-import Link from 'next/link';
+// import Link from 'next/link';
 import React from 'react';
 
 const HomePage = async () => {
@@ -28,11 +30,12 @@ const HomePage = async () => {
           <p className='text-lg'>
             Practice on ready interview questions & get instant feedback
           </p>
-          <Button asChild className='btn-primary max-sm:w-full'>
-            <Link href={user?.id ? '/interview' : 'sign-in'}>
-              Start an Interview
-            </Link>
-          </Button>
+          <Modal
+            title='Start an Interview'
+            description='Generate an interview based on your role. Practice with it and get feedback on your performance.'
+          >
+            <InterviewForm />
+          </Modal>
         </div>
         <Image
           src='/robot.png'
