@@ -1,11 +1,14 @@
+'use client';
+
 import Avatar from '@/components/ui/avatar';
 import { getCurrentUser } from '@/lib/actions/auth.action';
 import Image from 'next/image';
 import Link from 'next/link';
 import React, { ReactNode } from 'react';
+import useSWR from 'swr';
 
-const RootLayout = async ({ children }: { children: ReactNode }) => {
-  const user = await getCurrentUser();
+const RootLayout = ({ children }: { children: ReactNode }) => {
+  const { data: user } = useSWR('current-user', getCurrentUser);
 
   return (
     <div className='root-layout'>
