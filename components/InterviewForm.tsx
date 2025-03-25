@@ -48,7 +48,11 @@ const InterviewForm = () => {
     });
 
     if (response.success) {
-      router.push(`/interview/${response.interviewId}`);
+      if (response.interviewId) {
+        router.push(`/interview/${response.interviewId}`);
+      } else {
+        router.push('/');
+      }
     } else {
       toast.error('Something went wrong');
     }
@@ -59,18 +63,18 @@ const InterviewForm = () => {
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className='w-full flex flex-col gap-4 mt-4 form'
+          className='w-full flex flex-col gap-6 mt-4 form'
         >
           <FormField
             control={form.control}
             name='role'
-            label='Role'
+            label='Job Role'
             placeholder='Software Engineer'
           />
           <FormField
             control={form.control}
             name='type'
-            label='Type'
+            label='Interview Type'
             placeholder='Technical'
             type='dropdown'
             options={[
@@ -82,13 +86,13 @@ const InterviewForm = () => {
           <FormField
             control={form.control}
             name='techstack'
-            label='Techstack'
+            label='TechStack'
             placeholder='React, Node.js, MongoDB'
           />
           <FormField
             control={form.control}
             name='level'
-            label='Level'
+            label='Experience Level'
             placeholder='Junior'
             type='dropdown'
             options={[
@@ -100,7 +104,7 @@ const InterviewForm = () => {
           <FormField
             control={form.control}
             name='amount'
-            label='Amount'
+            label='Number of Questions'
             type='number'
             placeholder='1'
           />
