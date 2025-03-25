@@ -41,8 +41,6 @@ const HomePage = () => {
   const hasPastInterviews = (userInterviews ?? []).length > 0;
   const hasUpcomingInterviews = (latestInterviews ?? []).length > 0;
 
-  // if (isLoading) return <SpinnerLoader />;
-
   return (
     <>
       <section className='card-cta'>
