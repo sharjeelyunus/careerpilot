@@ -9,6 +9,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import SpinnerLoader from './ui/loader';
+import useSWR from 'swr';
 
 enum CallStatus {
   INACTIVE = 'INACTIVE',
@@ -29,22 +30,14 @@ const Agent = ({
   interviewId,
   questions,
 }: AgentProps) => {
-  const [user, setUser] = useState<User | null>(null);
+  const { data: user } = useSWR('current-user', getCurrentUser);
+
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [callStatus, setCallStatus] = useState<CallStatus>(CallStatus.INACTIVE);
   const [messages, setMessages] = useState<SavedMessage[]>([]);
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      const currentUser = await getCurrentUser();
-      setUser(currentUser);
-    };
-
-    fetchUser();
-  }, []);
 
   useEffect(() => {
     const onCallStart = () => setCallStatus(CallStatus.ACTIVE);

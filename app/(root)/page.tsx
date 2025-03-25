@@ -13,30 +13,27 @@ import {
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import Link from 'next/link';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
+import useSWR from 'swr';
 
 const HomePage = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [userInterviews, setUserInterviews] = useState<Interview[]>([]);
-  const [latestInterviews, setLatestInterviews] = useState<Interview[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: user, isLoading: isUserLoading } = useSWR(
+    'current-user',
+    getCurrentUser
+  );
 
-  useEffect(() => {
-    const fetchInterviews = async () => {
-      setIsLoading(true);
-      const user = await getCurrentUser();
-      setUser(user);
+  const { data: userInterviews, isLoading: isUserInterviewsLoading } = useSWR(
+    user?.id ? ['interviews-by-user', user.id] : null,
+    () => getInterviewByUserId(user?.id ?? '')
+  );
 
-      const [userInterviews, latestInterviews] = await Promise.all([
-        user?.id ? await getInterviewByUserId(user.id) : [],
-        await getLatestInterviews({ userId: user?.id }),
-      ]);
-      setUserInterviews(userInterviews ?? []);
-      setLatestInterviews(latestInterviews ?? []);
-      setIsLoading(false);
-    };
-    fetchInterviews();
-  }, [user?.id]);
+  const { data: latestInterviews, isLoading: isLatestInterviewsLoading } =
+    useSWR('latest-interviews', () =>
+      getLatestInterviews({ userId: user?.id })
+    );
+
+  const isLoading =
+    isUserLoading || isUserInterviewsLoading || isLatestInterviewsLoading;
 
   const hasPastInterviews = (userInterviews ?? []).length > 0;
   const hasUpcomingInterviews = (latestInterviews ?? []).length > 0;
@@ -79,7 +76,6 @@ const HomePage = () => {
             className={cn('flex flex-col gap-6 mt-8', !user?.id && 'hidden')}
           >
             <h2>Your Interviews</h2>
-
             <div className='interviews-section'>
               {hasPastInterviews ? (
                 userInterviews?.map((interview) => (
@@ -93,7 +89,6 @@ const HomePage = () => {
 
           <section className='flex flex-col gap-6 mt-8'>
             <h2>Take an Interview</h2>
-
             <div className='interviews-section'>
               {hasUpcomingInterviews ? (
                 latestInterviews?.map((interview) => (

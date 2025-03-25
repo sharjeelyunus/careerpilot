@@ -3,46 +3,43 @@
 import dayjs from 'dayjs';
 import Link from 'next/link';
 import Image from 'next/image';
-import { redirect } from 'next/navigation';
+import { useParams } from 'next/navigation';
+import useSWR from 'swr';
 
 import {
   getFeedbackByInterviewId,
   getInterviewById,
 } from '@/lib/actions/general.action';
-import { Button } from '@/components/ui/button';
 import { getCurrentUser } from '@/lib/actions/auth.action';
-import { useEffect, useState } from 'react';
 import SpinnerLoader from '@/components/ui/loader';
+import { Button } from '@/components/ui/button';
 
-const Feedback = ({ params }: RouteParams) => {
-  const [feedback, setFeedback] = useState<Feedback | null>(null);
-  const [interview, setInterview] = useState<Interview | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+const Feedback = () => {
+  const params = useParams();
+  const id = params?.id as string;
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      const { id } = await params;
-      const user = await getCurrentUser();
+  const { data: user, isLoading: isUserLoading } = useSWR(
+    'current-user',
+    getCurrentUser
+  );
 
-      const fetchedInterview = await getInterviewById(id);
-      if (!fetchedInterview) redirect('/');
-
-      const fetchedFeedback = await getFeedbackByInterviewId({
+  const { data: feedback, isLoading: isFeedbackLoading } = useSWR(
+    user?.id && id ? ['feedback', id, user.id] : null,
+    () =>
+      getFeedbackByInterviewId({
         interviewId: id,
-        userId: user?.id || '',
-      });
+        userId: user?.id ?? '',
+      })
+  );
 
-      setInterview(fetchedInterview);
-      setFeedback(fetchedFeedback);
-      setIsLoading(false);
-    };
+  const { data: interview, isLoading: isInterviewLoading } = useSWR(
+    id ? ['interview', id] : null,
+    () => getInterviewById(id)
+  );
 
-    fetchData();
-  }, [params]);
+  const isLoading = isUserLoading || isFeedbackLoading || isInterviewLoading;
 
   if (isLoading) return <SpinnerLoader />;
-
   if (!interview || !feedback) return null;
 
   return (

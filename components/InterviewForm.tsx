@@ -1,6 +1,5 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
 import { Button } from './ui/button';
 import { Form } from '@/components/ui/form';
 import FormField from './FormField';
@@ -12,6 +11,7 @@ import { getCurrentUser } from '@/lib/actions/auth.action';
 import { generateInterview } from '@/lib/actions/general.action';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import useSWR from 'swr';
 
 const formSchema = z.object({
   role: z.string().min(1),
@@ -22,15 +22,7 @@ const formSchema = z.object({
 });
 
 const InterviewForm = () => {
-  const [user, setUser] = useState<User | null>(null);
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      const user = await getCurrentUser();
-      setUser(user);
-    };
-    fetchUser();
-  }, []);
+  const { data: user } = useSWR('current-user', getCurrentUser);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
