@@ -1,3 +1,5 @@
+'use client';
+
 import dayjs from 'dayjs';
 import Image from 'next/image';
 import { Button } from './ui/button';
@@ -5,8 +7,9 @@ import Link from 'next/link';
 import DisplayTechIcons from './DisplayTechIcons';
 import { getFeedbackByInterviewId } from '@/lib/actions/general.action';
 import { SiLevelsdotfyi } from 'react-icons/si';
+import { useEffect, useState } from 'react';
 
-const InterviewCard = async ({
+const InterviewCard = ({
   id,
   role,
   userId,
@@ -15,10 +18,21 @@ const InterviewCard = async ({
   createdAt,
   level,
 }: InterviewCardProps) => {
-  const feedback =
-    userId && id
-      ? await getFeedbackByInterviewId({ interviewId: id, userId })
-      : null;
+  const [feedback, setFeedback] = useState<Feedback | null>(null);
+
+  useEffect(() => {
+    const fetchFeedback = async () => {
+      const feedback =
+        userId && id
+          ? await getFeedbackByInterviewId({ interviewId: id, userId })
+          : null;
+
+      setFeedback(feedback);
+    };
+
+    fetchFeedback();
+  }, [id, userId]);
+
   const normalizedType = /mix/gi.test(type) ? 'Mixed' : type;
   const formattedDate = dayjs(feedback?.createdAt || createdAt).format(
     'MMM D, YYYY'
