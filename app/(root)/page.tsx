@@ -32,23 +32,37 @@ const HomePage = () => {
 
   const { data: user, isLoading: isUserLoading } = useSWR(
     'current-user',
-    getCurrentUser
+    getCurrentUser,
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 60000, // Cache for 1 minute
+    }
   );
 
   const { data: userInterviewsData, isLoading: isUserInterviewsLoading } =
     useSWR(
       user?.id ? ['interviews-by-user', user.id, userInterviewsPage] : null,
       () =>
-        getInterviewByUserId(user?.id ?? '', userInterviewsPage, ITEMS_PER_PAGE)
+        getInterviewByUserId(user?.id ?? '', userInterviewsPage, ITEMS_PER_PAGE),
+      {
+        revalidateOnFocus: false,
+        dedupingInterval: 30000, // Cache for 30 seconds
+      }
     );
 
   const { data: latestInterviewsData, isLoading: isLatestInterviewsLoading } =
-    useSWR(['latest-interviews', latestInterviewsPage], () =>
-      getLatestInterviews({
-        userId: user?.id,
-        page: latestInterviewsPage,
-        limit: ITEMS_PER_PAGE,
-      })
+    useSWR(
+      ['latest-interviews', latestInterviewsPage],
+      () =>
+        getLatestInterviews({
+          userId: user?.id,
+          page: latestInterviewsPage,
+          limit: ITEMS_PER_PAGE,
+        }),
+      {
+        revalidateOnFocus: false,
+        dedupingInterval: 30000, // Cache for 30 seconds
+      }
     );
 
   const hasPastInterviews = (userInterviewsData?.interviews ?? []).length > 0;

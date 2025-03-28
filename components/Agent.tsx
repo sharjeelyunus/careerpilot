@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import SpinnerLoader from './ui/loader';
 import useSWR from 'swr';
+import { AgentProps } from '@/types';
 
 enum CallStatus {
   INACTIVE = 'INACTIVE',
@@ -112,8 +113,8 @@ const Agent = ({
     if (type === 'generate') {
       await vapi.start(process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!, {
         variableValues: {
-          username: userName,
-          userid: userId,
+          username: user?.name || '',
+          userid: user?.id || '',
         },
       });
     } else {

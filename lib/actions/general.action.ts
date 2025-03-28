@@ -15,47 +15,62 @@ import { google } from '@ai-sdk/google';
 import { generateObject } from 'ai';
 import axios from 'axios';
 
+// Cache configuration
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+const cache = new Map<string, CacheEntry<unknown>>();
+
+const getCachedData = <T>(key: string): T | null => {
+  const cached = cache.get(key);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.data as T;
+  }
+  return null;
+};
+
+const setCachedData = <T>(key: string, data: T) => {
+  cache.set(key, { data, timestamp: Date.now() });
+};
+
 export async function getInterviewByUserId(
   userId: string,
   page: number = 1,
   pageSize: number = 10
 ): Promise<{ interviews: Interview[]; total: number }> {
   try {
-    // Step 1: Get feedback for user
-    const feedbackSnapshot = await db
-      .collection('feedback')
-      .where('userId', '==', userId)
-      .get();
+    if (!userId) {
+      throw new Error('User ID is required');
+    }
+
+    const cacheKey = `interviews-${userId}-${page}-${pageSize}`;
+    const cachedData = getCachedData<{ interviews: Interview[]; total: number }>(cacheKey);
+    if (cachedData) return cachedData;
+
+    // Use batch operations for parallel queries
+    const [feedbackSnapshot, totalSnapshot, interviewsSnapshot] = await Promise.all([
+      db.collection('feedback').where('userId', '==', userId).get(),
+      db.collection('interviews').where('userId', '==', userId).count().get(),
+      db
+        .collection('interviews')
+        .where('userId', '==', userId)
+        .orderBy('createdAt', 'desc')
+        .limit(pageSize)
+        .offset((page - 1) * pageSize)
+        .get(),
+    ]);
 
     const feedbackMap = new Map<string, Feedback>();
-
     feedbackSnapshot.forEach((doc) => {
       const data = doc.data();
       feedbackMap.set(data.interviewId, { id: doc.id, ...data } as Feedback);
     });
 
-    // Step 2: Get total count for pagination
-    const totalSnapshot = await db
-      .collection('interviews')
-      .where('userId', '==', userId)
-      .count()
-      .get();
-
     const total = totalSnapshot.data().count;
-
-    // Step 3: Get paginated interviews
-    const interviewsSnapshot = await db
-      .collection('interviews')
-      .where('userId', '==', userId)
-      .orderBy('createdAt', 'desc')
-      .limit(pageSize)
-      .offset((page - 1) * pageSize)
-      .get();
-
-    // Step 4: Build interview list with feedback embedded if available
     const interviews: Interview[] = interviewsSnapshot.docs.map((doc) => {
       const interviewData = { id: doc.id, ...doc.data() } as Interview;
-
       const feedback = feedbackMap.get(doc.id);
       if (feedback) {
         return {
@@ -64,14 +79,18 @@ export async function getInterviewByUserId(
           feedback,
         };
       }
-
       return interviewData;
     });
 
-    return { interviews, total };
+    const result = { interviews, total };
+    setCachedData(cacheKey, result);
+    return result;
   } catch (error) {
     console.error('Error fetching interviews:', error);
-    return { interviews: [], total: 0 };
+    if (error instanceof Error) {
+      throw new Error(`Failed to fetch interviews: ${error.message}`);
+    }
+    throw new Error('Failed to fetch interviews');
   }
 }
 
@@ -80,32 +99,40 @@ export async function getLatestInterviews(
 ): Promise<{ interviews: Interview[]; total: number }> {
   const { userId, limit = 10, page = 1 } = params;
 
-  let query = db
-    .collection('interviews')
-    .where('finalized', '==', true)
-    .orderBy('createdAt', 'desc');
+  try {
+    let query = db
+      .collection('interviews')
+      .where('finalized', '==', true)
+      .orderBy('createdAt', 'desc');
 
-  if (userId) {
-    query = query.where('userId', '!=', userId);
+    if (userId) {
+      query = query.where('userId', '!=', userId);
+    }
+
+    // Get total count
+    const totalSnapshot = await query.count().get();
+    const total = totalSnapshot.data().count;
+
+    // Get paginated results
+    const interviews = await query
+      .limit(limit)
+      .offset((page - 1) * limit)
+      .get();
+
+    return {
+      interviews: interviews.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as Interview[],
+      total,
+    };
+  } catch (error) {
+    console.error('Error fetching latest interviews:', error);
+    if (error instanceof Error) {
+      throw new Error(`Failed to fetch latest interviews: ${error.message}`);
+    }
+    throw new Error('Failed to fetch latest interviews');
   }
-
-  // Get total count
-  const totalSnapshot = await query.count().get();
-  const total = totalSnapshot.data().count;
-
-  // Get paginated results
-  const interviews = await query
-    .limit(limit)
-    .offset((page - 1) * limit)
-    .get();
-
-  return {
-    interviews: interviews.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as Interview[],
-    total,
-  };
 }
 
 export async function getInterviewById(id: string): Promise<Interview | null> {
