@@ -88,7 +88,7 @@ export function UserProfileCard({
             <div className='flex flex-col items-center'>
               <Target className='h-5 w-5 text-green-500' />
               <span className='text-sm font-medium'>
-                {progress.averageScore}%
+                {progress.averageScore.toFixed(2)}%
               </span>
               <span className='text-xs text-muted-foreground'>Avg Score</span>
             </div>

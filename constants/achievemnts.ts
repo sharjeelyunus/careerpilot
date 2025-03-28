@@ -68,7 +68,7 @@ export const ACHIEVEMENTS = [
     getProgress: (_: number, interviews: Interview[]) => {
       const scores = interviews.map((i) => i.feedback?.totalScore || 0);
       return scores.length
-        ? scores.reduce((a, b) => a + b, 0) / scores.length
+        ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2)
         : 0;
     },
     isCompleted: (_: number, interviews: Interview[]) => {
