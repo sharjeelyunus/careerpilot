@@ -44,7 +44,9 @@ const RootLayout = ({ children }: { children: ReactNode }) => {
                   </Avatar>
                 </NavigationMenuTrigger>
                 <NavigationMenuContent className='p-4 md:w-[200px] lg:w-[200px]'>
-                  <NavigationMenuLink onClick={() => redirect('/profile')}>
+                  <NavigationMenuLink
+                    onClick={() => redirect(`/profile/${user?.id}`)}
+                  >
                     Profile
                   </NavigationMenuLink>
                   <NavigationMenuLink onClick={() => redirect('/leaderboard')}>

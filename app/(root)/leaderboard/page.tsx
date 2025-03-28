@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getLeaderboard } from '@/lib/actions/general.action';
 import useSWR from 'swr';
 import SpinnerLoader from '@/components/ui/loader';
+import { redirect } from 'next/navigation';
 
 const LeaderboardPage = () => {
   const { data: users, isLoading } = useSWR('leaderboard', getLeaderboard);
@@ -16,7 +17,11 @@ const LeaderboardPage = () => {
       <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
         {users &&
           users.slice(0, 3).map((user, index) => (
-            <div key={user.id} className='card-border w-full'>
+            <div
+              key={user.id}
+              className='card-border w-full'
+              onClick={() => redirect(`/profile/${user.id}`)}
+            >
               <div className='card p-4'>
                 <div className='text-light-100'>{index + 1}.</div>
                 <div className=' flex flex-col text-center items-center gap-4'>

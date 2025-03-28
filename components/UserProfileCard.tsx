@@ -6,12 +6,15 @@ import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Edit2, Star, Trophy, Target, Zap } from 'lucide-react';
 import { UserProfileCardProps } from '@/types';
+import useSWR from 'swr';
+import { getCurrentUser } from '@/lib/actions/auth.action';
 
 export function UserProfileCard({
   profile,
   progress,
   onEdit,
 }: UserProfileCardProps) {
+  const { data: user } = useSWR('current-user', getCurrentUser);
   return (
     <Card className='w-full card'>
       <CardHeader className='flex flex-row items-center space-y-0 pb-2'>
@@ -30,9 +33,11 @@ export function UserProfileCard({
             )}
           </div>
         </div>
-        <Button variant='ghost' size='icon' onClick={onEdit}>
-          <Edit2 className='h-4 w-4' />
-        </Button>
+        {user?.id === profile?.id && (
+          <Button variant='ghost' size='icon' onClick={onEdit}>
+            <Edit2 className='h-4 w-4' />
+          </Button>
+        )}
       </CardHeader>
       <CardContent>
         {profile?.bio && (

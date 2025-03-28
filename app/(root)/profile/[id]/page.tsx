@@ -5,7 +5,7 @@ import { UserProfileCard } from '@/components/UserProfileCard';
 import { UserProgressCard } from '@/components/UserProgressCard';
 import { EditProfileModal } from '@/components/EditProfileModal';
 import { User } from '@/types';
-import { getCurrentUser } from '@/lib/actions/auth.action';
+import { getUserById } from '@/lib/actions/auth.action';
 import useSWR, { mutate } from 'swr';
 import {
   getInterviewByUserId,
@@ -13,12 +13,17 @@ import {
 } from '@/lib/actions/general.action';
 import { calculateUserProgress } from '@/lib/utils';
 import { useBadgeSync } from '@/lib/hooks/useBadgeSync';
+import { useParams } from 'next/navigation';
+import SpinnerLoader from '@/components/ui/loader';
 
 export default function ProfilePage() {
+  const { id } = useParams();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  const { data: user } = useSWR('current-user', getCurrentUser);
-  const { data: userInterviews } = useSWR(
+  const { data: user, isLoading: userIsLoading } = useSWR('user-by-id', () =>
+    getUserById(id as string)
+  );
+  const { data: userInterviews, isLoading: userInterviewsIsLoading } = useSWR(
     user?.id ? ['interviews-by-user', user.id] : null,
     () => getInterviewByUserId(user?.id ?? '')
   );
@@ -35,6 +40,8 @@ export default function ProfilePage() {
     await updateUserProfile(updatedProfile);
     await mutate('current-user');
   };
+
+  if (userIsLoading || userInterviewsIsLoading) return <SpinnerLoader />;
 
   return (
     <div className='container mx-auto py-8 space-y-8'>

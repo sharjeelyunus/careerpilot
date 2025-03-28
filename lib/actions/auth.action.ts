@@ -178,3 +178,13 @@ export async function isAuthenticated() {
   const user = await getCurrentUser();
   return !!user;
 }
+
+export async function getUserById(id: string): Promise<User | null> {
+  const userRecord = await db.collection('users').doc(id).get();
+  if (!userRecord.exists) return null;
+
+  return {
+    ...userRecord.data(),
+    id: userRecord.id,
+  } as User;
+}
