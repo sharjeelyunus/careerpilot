@@ -23,6 +23,8 @@ interface Interview {
   userId: string;
   type: string;
   finalized: boolean;
+  completed: boolean;
+  feedback?: Feedback | null;
 }
 
 interface CreateFeedbackParams {
@@ -33,10 +35,17 @@ interface CreateFeedbackParams {
 }
 
 interface User {
-  name: string;
-  email: string;
   id: string;
-  photoURL: string;
+  email: string;
+  name: string;
+  photoURL?: string;
+  bio?: string;
+  location?: string;
+  skills?: string[];
+  experience: string;
+  preferredRoles?: string[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 interface InterviewCardProps {
@@ -47,6 +56,7 @@ interface InterviewCardProps {
   techstack: string[];
   createdAt?: string;
   level: string;
+  feedback?: Feedback | null;
 }
 
 interface AgentProps {
@@ -54,7 +64,7 @@ interface AgentProps {
   userId?: string;
   interviewId?: string;
   feedbackId?: string;
-  type: "generate" | "interview";
+  type: 'generate' | 'interview';
   questions?: string[];
 }
 
@@ -85,7 +95,7 @@ interface SignUpParams {
   password: string;
 }
 
-type FormType = "sign-in" | "sign-up";
+type FormType = 'sign-in' | 'sign-up';
 
 interface InterviewFormProps {
   interviewId: string;
@@ -107,4 +117,29 @@ interface GenerateInterviewParams {
   techstack: string;
   amount: number;
   userid: string;
+}
+
+export interface UserProgress {
+  userId: string;
+  totalInterviews: number;
+  completedInterviews: number;
+  averageScore: number;
+  streak: number;
+  badges: Badge[];
+  achievements: Achievement[];
+  level: number;
+  experiencePoints: number;
+}
+
+interface UserProfileCardProps {
+  profile: User;
+  progress: UserProgress;
+  onEdit: () => void;
+}
+
+interface EditProfileModalProps {
+  profile: User;
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (profile: User) => void;
 }

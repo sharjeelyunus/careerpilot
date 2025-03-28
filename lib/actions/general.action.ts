@@ -2,6 +2,15 @@
 
 import { feedbackSchema } from '@/constants';
 import { db } from '@/firebase/admin';
+import {
+  CreateFeedbackParams,
+  Feedback,
+  GenerateInterviewParams,
+  GetFeedbackByInterviewIdParams,
+  GetLatestInterviewsParams,
+  Interview,
+  User,
+} from '@/types';
 import { google } from '@ai-sdk/google';
 import { generateObject } from 'ai';
 import axios from 'axios';
@@ -10,45 +19,43 @@ export async function getInterviewByUserId(
   userId: string
 ): Promise<Interview[]> {
   try {
+    // Step 1: Get feedback for user
     const feedbackSnapshot = await db
       .collection('feedback')
       .where('userId', '==', userId)
       .get();
 
-    const feedbackInterviewIds = feedbackSnapshot.docs.map(
-      (doc) => doc.data().interviewId
-    );
+    const feedbackMap = new Map<string, Feedback>();
 
+    feedbackSnapshot.forEach((doc) => {
+      const data = doc.data();
+      feedbackMap.set(data.interviewId, { id: doc.id, ...data } as Feedback);
+    });
+
+    // Step 2: Get all interviews for user
     const interviewsSnapshot = await db
       .collection('interviews')
       .where('userId', '==', userId)
       .orderBy('createdAt', 'desc')
       .get();
 
-    const interviewsWithFeedback = interviewsSnapshot.docs.filter((doc) =>
-      feedbackInterviewIds.includes(doc.id)
-    );
-    const interviewsWithoutFeedback = interviewsSnapshot.docs.filter(
-      (doc) => !feedbackInterviewIds.includes(doc.id)
-    );
+    // Step 3: Build interview list with feedback embedded if available
+    const interviews: Interview[] = interviewsSnapshot.docs.map((doc) => {
+      const interviewData = { id: doc.id, ...doc.data() } as Interview;
 
-    const updatedInterviewsWithFeedback = await Promise.all(
-      interviewsWithFeedback.map(async (doc) => {
-        return await db.collection('interviews').doc(doc.id).get();
-      })
-    );
+      const feedback = feedbackMap.get(doc.id);
+      if (feedback) {
+        return {
+          ...interviewData,
+          completed: true,
+          feedback, // 💡 push the actual feedback object here
+        };
+      }
 
-    const allInterviewDocs = [
-      ...updatedInterviewsWithFeedback,
-      ...interviewsWithoutFeedback,
-    ];
+      return interviewData;
+    });
 
-    return allInterviewDocs
-      .filter((doc) => doc.exists)
-      .map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Interview[];
+    return interviews;
   } catch (error) {
     console.error('Error fetching interviews:', error);
     return [];
@@ -179,4 +186,12 @@ export async function generateInterview(params: GenerateInterviewParams) {
   const response = await axios.post(api, params);
 
   return response.data;
+}
+
+export async function updateUserProfile(params: User) {
+  const { id, ...userData } = params;
+
+  const userRef = db.collection('users').doc(id);
+
+  await userRef.update(userData);
 }

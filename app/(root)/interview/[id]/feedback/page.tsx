@@ -47,7 +47,7 @@ const Feedback = () => {
       <div className='flex flex-row justify-center'>
         <h1 className='text-4xl font-semibold'>
           Feedback on the Interview -{' '}
-          <span className='capitalize'>{interview.role}</span> Interview
+          <span className='capitalize'>{interview.role}</span>
         </h1>
       </div>
 

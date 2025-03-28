@@ -5,9 +5,8 @@ import Image from 'next/image';
 import { Button } from './ui/button';
 import Link from 'next/link';
 import DisplayTechIcons from './DisplayTechIcons';
-import { getFeedbackByInterviewId } from '@/lib/actions/general.action';
 import { SiLevelsdotfyi } from 'react-icons/si';
-import useSWR from 'swr';
+import { InterviewCardProps } from '@/types';
 
 const InterviewCard = ({
   id,
@@ -17,12 +16,8 @@ const InterviewCard = ({
   techstack,
   createdAt,
   level,
+  feedback,
 }: InterviewCardProps) => {
-  const { data: feedback } = useSWR(
-    userId && id ? ['feedback', id, userId] : null,
-    () => getFeedbackByInterviewId({ interviewId: id!, userId: userId! })
-  );
-
   const normalizedType = /mix/gi.test(type) ? 'Mixed' : type;
   const formattedDate = dayjs(feedback?.createdAt || createdAt).format(
     'MMM D, YYYY'

@@ -1,27 +1,53 @@
-'use client';
+"use client"
 
-import React from 'react';
-import Image from 'next/image';
-import { auth } from '@/firebase/client';
-import { signOut } from '@/lib/actions/auth.action';
-import { redirect } from 'next/navigation';
+import * as React from "react"
+import * as AvatarPrimitive from "@radix-ui/react-avatar"
 
-const Avatar = ({ image }: { image: string }) => {
-  const handleSignOut = async () => {
-    await signOut();
-    await auth.signOut();
-    redirect('/sign-in');
-  };
+import { cn } from "@/lib/utils"
+
+function Avatar({
+  className,
+  ...props
+}: React.ComponentProps<typeof AvatarPrimitive.Root>) {
   return (
-    <Image
-      src={image}
-      alt='robot'
-      height={32}
-      width={32}
-      className='rounded-full'
-      onClick={handleSignOut}
+    <AvatarPrimitive.Root
+      data-slot="avatar"
+      className={cn(
+        "relative flex size-8 shrink-0 overflow-hidden rounded-full",
+        className
+      )}
+      {...props}
     />
-  );
-};
+  )
+}
 
-export default Avatar;
+function AvatarImage({
+  className,
+  ...props
+}: React.ComponentProps<typeof AvatarPrimitive.Image>) {
+  return (
+    <AvatarPrimitive.Image
+      data-slot="avatar-image"
+      className={cn("aspect-square size-full", className)}
+      {...props}
+    />
+  )
+}
+
+function AvatarFallback({
+  className,
+  ...props
+}: React.ComponentProps<typeof AvatarPrimitive.Fallback>) {
+  return (
+    <AvatarPrimitive.Fallback
+      data-slot="avatar-fallback"
+      className={cn(
+        "bg-muted flex size-full items-center justify-center rounded-full",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+export { Avatar, AvatarImage, AvatarFallback }
