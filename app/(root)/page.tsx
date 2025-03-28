@@ -52,7 +52,7 @@ const HomePage = () => {
 
   const { data: latestInterviewsData, isLoading: isLatestInterviewsLoading } =
     useSWR(
-      ['latest-interviews', latestInterviewsPage],
+      !isUserLoading ? ['latest-interviews', latestInterviewsPage, user?.id] : null,
       () =>
         getLatestInterviews({
           userId: user?.id,

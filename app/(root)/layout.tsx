@@ -14,15 +14,36 @@ import { getCurrentUser, signOut } from '@/lib/actions/auth.action';
 import Image from 'next/image';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import React, { ReactNode } from 'react';
-import useSWR from 'swr';
+import React, { ReactNode, useEffect } from 'react';
+import useSWR, { mutate } from 'swr';
 
 const RootLayout = ({ children }: { children: ReactNode }) => {
-  const { data: user } = useSWR('current-user', getCurrentUser);
+  const { data: user, mutate: mutateUser } = useSWR(
+    'current-user',
+    getCurrentUser,
+    {
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+      dedupingInterval: 0,
+    }
+  );
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
+      if (firebaseUser) {
+        await mutateUser();
+      } else {
+        await mutate(() => true, undefined, { revalidate: false });
+      }
+    });
+
+    return () => unsubscribe();
+  }, [mutateUser]);
 
   const handleSignOut = async () => {
     await signOut();
     await auth.signOut();
+    await mutate(() => true, undefined, { revalidate: false });
     redirect('/sign-in');
   };
 
