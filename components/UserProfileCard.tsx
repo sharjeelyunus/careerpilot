@@ -13,7 +13,7 @@ export function UserProfileCard({
   onEdit,
 }: UserProfileCardProps) {
   return (
-    <Card className='w-full'>
+    <Card className='w-full card'>
       <CardHeader className='flex flex-row items-center space-y-0 pb-2'>
         <div className='flex items-center space-x-4'>
           <Avatar className='h-20 w-20'>

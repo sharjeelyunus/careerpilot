@@ -10,7 +10,7 @@ interface UserProgressCardProps {
 
 export function UserProgressCard({ progress }: UserProgressCardProps) {
   return (
-    <Card className='w-full'>
+    <Card className='w-full card'>
       <CardContent className='space-y-6'>
         {/* Achievements Section */}
         {progress.achievements.length > 0 && (
@@ -53,22 +53,21 @@ export function UserProgressCard({ progress }: UserProgressCardProps) {
             </h3>
             <div className='grid grid-cols-2 gap-4'>
               {progress.badges.map((badge) => (
-                <div
-                  key={badge.id}
-                  className='flex items-center gap-3 p-3 rounded-lg border bg-card'
-                >
-                  <div className='p-2 rounded-full bg-primary/10 h-10 w-10 flex items-center justify-center'>
-                    {badge?.icon ? (
-                      <span>{badge.icon}</span>
-                    ) : (
-                      <Target className='h-4 w-4 text-primary' />
-                    )}
-                  </div>
-                  <div>
-                    <p className='font-medium'>{badge.name}</p>
-                    <p className='text-sm text-muted-foreground'>
-                      {badge.description}
-                    </p>
+                <div className='card-border w-full' key={badge.id}>
+                  <div className='flex items-center gap-3 p-3 rounded-lg border card'>
+                    <div className='p-2 rounded-full bg-primary/10 h-10 w-10 flex items-center justify-center'>
+                      {badge?.icon ? (
+                        <span>{badge.icon}</span>
+                      ) : (
+                        <Target className='h-4 w-4 text-primary' />
+                      )}
+                    </div>
+                    <div>
+                      <p className='font-medium'>{badge.name}</p>
+                      <p className='text-sm text-muted-foreground'>
+                        {badge.description}
+                      </p>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -80,20 +79,26 @@ export function UserProgressCard({ progress }: UserProgressCardProps) {
         <div>
           <h3 className='text-lg font-semibold mb-4'>Statistics</h3>
           <div className='grid grid-cols-2 gap-4'>
-            <div className='p-4 rounded-lg border bg-card'>
-              <p className='text-sm text-muted-foreground'>Total Interviews</p>
-              <p className='text-2xl font-bold'>{progress.totalInterviews}</p>
+            <div className='card-border w-full'>
+              <div className='p-4 rounded-lg border card'>
+                <p className='text-sm text-muted-foreground'>
+                  Total Interviews
+                </p>
+                <p className='text-2xl font-bold'>{progress.totalInterviews}</p>
+              </div>
             </div>
-            <div className='p-4 rounded-lg border bg-card'>
-              <p className='text-sm text-muted-foreground'>Completion Rate</p>
-              <p className='text-2xl font-bold'>
-                {Math.round(
-                  ((progress.completedInterviews || 0) /
-                    (progress.totalInterviews || 1)) *
-                    100
-                )}
-                %
-              </p>
+            <div className='card-border w-full'>
+              <div className='p-4 rounded-lg border card'>
+                <p className='text-sm text-muted-foreground'>Completion Rate</p>
+                <p className='text-2xl font-bold'>
+                  {Math.round(
+                    ((progress.completedInterviews || 0) /
+                      (progress.totalInterviews || 1)) *
+                      100
+                  )}
+                  %
+                </p>
+              </div>
             </div>
           </div>
         </div>

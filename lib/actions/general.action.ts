@@ -195,3 +195,15 @@ export async function updateUserProfile(params: User) {
 
   await userRef.update(userData);
 }
+
+export async function getLeaderboard(): Promise<User[]> {
+  const leaderboard = await db
+    .collection('users')
+    .orderBy('experiencePoints', 'desc')
+    .get();
+
+  return leaderboard.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  })) as User[] | [];
+}

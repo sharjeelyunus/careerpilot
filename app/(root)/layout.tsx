@@ -47,6 +47,9 @@ const RootLayout = ({ children }: { children: ReactNode }) => {
                   <NavigationMenuLink onClick={() => redirect('/profile')}>
                     Profile
                   </NavigationMenuLink>
+                  <NavigationMenuLink onClick={() => redirect('/leaderboard')}>
+                    Leaderboard
+                  </NavigationMenuLink>
                   <NavigationMenuLink onClick={handleSignOut}>
                     Sign Out
                   </NavigationMenuLink>

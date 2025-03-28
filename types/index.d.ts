@@ -71,8 +71,6 @@ interface User {
   skills?: string[];
   experience: string;
   preferredRoles?: string[];
-  createdAt: Date;
-  updatedAt: Date;
   badges: Badge[];
   experiencePoints: number;
 }
