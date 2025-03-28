@@ -6,6 +6,8 @@ import { getLeaderboard } from '@/lib/actions/general.action';
 import useSWR from 'swr';
 import SpinnerLoader from '@/components/ui/loader';
 import { redirect } from 'next/navigation';
+import { cn } from '@/lib/utils';
+import { BADGES } from '@/constants/badges';
 
 const LeaderboardPage = () => {
   const { data: users, isLoading } = useSWR('leaderboard', getLeaderboard);
@@ -29,9 +31,27 @@ const LeaderboardPage = () => {
                     <AvatarImage src={user?.photoURL} />
                     <AvatarFallback>{user?.name?.[0]}</AvatarFallback>
                   </Avatar>
-                  <div className='flex flex-col'>
+                  <div className='flex flex-col gap-2 items-center'>
                     <h2 className='text-lg font-bold'>{user.name}</h2>
                     <p className='text-light-100'>{user.experiencePoints} XP</p>
+                    <div className='flex flex-row'>
+                      {user?.badges?.slice(0, 3).map(({ id }, index) => (
+                        <div
+                          key={id}
+                          className={cn(
+                            'relative group bg-dark-300 rounded-full p-2 flex-center',
+                            index >= 1 && '-ml-3'
+                          )}
+                        >
+                          <span className='tech-tooltip'>
+                            {BADGES.find((badge) => badge.id === id)?.name}
+                          </span>
+                          <div className='p-2 rounded-full bg-primary/10 h-5 w-5 flex items-center justify-center'>
+                            {BADGES.find((badge) => badge.id === id)?.icon}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
