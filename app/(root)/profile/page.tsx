@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { UserProfileCard } from '@/components/UserProfileCard';
 import { UserProgressCard } from '@/components/UserProgressCard';
 import { EditProfileModal } from '@/components/EditProfileModal';
-import { User, UserProgress } from '@/types';
+import { Badge, User, UserProgress } from '@/types';
 import { getCurrentUser } from '@/lib/actions/auth.action';
 import useSWR, { mutate } from 'swr';
 import {
@@ -19,10 +19,12 @@ import { BADGES } from '@/constants/badges';
 dayjs.extend(isSameOrAfter);
 
 export default function ProfilePage() {
-  const { data: profile } = useSWR('current-user', getCurrentUser);
+  const [hasSyncedRewards, setHasSyncedRewards] = useState(false);
+
+  const { data: user } = useSWR('current-user', getCurrentUser);
   const { data: userInterviews } = useSWR(
-    profile?.id ? ['interviews-by-user', profile.id] : null,
-    () => getInterviewByUserId(profile?.id ?? '')
+    user?.id ? ['interviews-by-user', user.id] : null,
+    () => getInterviewByUserId(user?.id ?? '')
   );
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -60,9 +62,6 @@ export default function ProfilePage() {
     return streakCount;
   })();
 
-  const experiencePoints = completedInterviews * 100 + streak * 100;
-  const level = 1 + Math.floor(experiencePoints / 1000);
-
   const achievements = ACHIEVEMENTS.map((achievement) => {
     const progress = achievement.getProgress(
       completedInterviews,
@@ -80,23 +79,72 @@ export default function ProfilePage() {
     };
   });
 
-  const badges = achievements
-    .filter((a) => a.completed)
-    .map((achievement) => {
-      const matchedBadge = BADGES.find(
-        (badge) =>
-          badge.name === achievement.name || badge.type === achievement.type
-      );
-      if (!matchedBadge) return null;
+  const badges =
+    user?.badges && user.badges.length > 0
+      ? BADGES.filter((badge) => user.badges.some((b) => b.id === badge.id))
+      : achievements
+          .filter((a) => a.completed)
+          .map((achievement) => {
+            const matchedBadge = BADGES.find(
+              (badge) =>
+                badge.name === achievement.name ||
+                badge.type === achievement.type
+            );
+            if (!matchedBadge) return null;
 
-      return {
-        ...matchedBadge,
-      };
-    })
-    .filter(Boolean);
+            return {
+              ...matchedBadge,
+            };
+          })
+          .filter(Boolean);
+
+  const experiencePoints =
+    completedInterviews * 100 +
+    streak * 100 +
+    badges.reduce((acc) => acc + 100, 0);
+
+  const level = 1 + Math.floor(experiencePoints / 1000);
+
+  useEffect(() => {
+    if (!user || !userInterviews || hasSyncedRewards) return;
+
+    const alreadyBadged = new Set((user.badges || []).map((b) => b.id));
+
+    const newlyEarnedBadges = achievements
+      .filter((a) => a.completed)
+      .map((achievement) =>
+        BADGES.find(
+          (badge) =>
+            badge.name === achievement.name || badge.type === achievement.type
+        )
+      )
+      .filter(
+        (b): b is (typeof BADGES)[number] => !!b && !alreadyBadged.has(b.id)
+      )
+      .map((b) => ({
+        id: b.id,
+        earnedAt: new Date().toISOString(),
+      }));
+
+    if (
+      newlyEarnedBadges.length > 0 ||
+      user.experiencePoints !== experiencePoints
+    ) {
+      updateUserProfile({
+        ...user,
+        badges: [...(user.badges || []), ...newlyEarnedBadges] as Badge[],
+        experiencePoints,
+      }).then(() => {
+        mutate('current-user');
+        setHasSyncedRewards(true);
+      });
+    } else {
+      setHasSyncedRewards(true);
+    }
+  }, [achievements, user, userInterviews, hasSyncedRewards, experiencePoints]);
 
   const progress = {
-    userId: profile?.id ?? '',
+    userId: user?.id ?? '',
     totalInterviews: userInterviews?.length,
     completedInterviews: completedInterviews,
     averageScore: userInterviews?.length
@@ -104,10 +152,11 @@ export default function ProfilePage() {
       : 0,
     streak: streak,
     badges,
-    achievements: achievements.filter((a) => !a.completed && a.progress > 0),
+    achievements:
+      achievements?.filter((a) => !a.completed && a.progress > 0) ?? [],
     level,
-    experiencePoints,
-  } as UserProgress;
+    experiencePoints: user?.experiencePoints ?? experiencePoints ?? 0,
+  } as unknown as UserProgress;
 
   const handleProfileEdit = () => {
     setIsEditModalOpen(true);
@@ -121,7 +170,7 @@ export default function ProfilePage() {
   return (
     <div className='container mx-auto py-8 space-y-8'>
       <UserProfileCard
-        profile={profile as User}
+        profile={user as User}
         progress={progress}
         onEdit={handleProfileEdit}
       />
@@ -129,7 +178,7 @@ export default function ProfilePage() {
       <UserProgressCard progress={progress} />
 
       <EditProfileModal
-        profile={profile as User}
+        profile={user as User}
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         onSave={handleProfileSave}

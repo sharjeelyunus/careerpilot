@@ -34,6 +34,33 @@ interface CreateFeedbackParams {
   feedbackId?: string;
 }
 
+export type BadgeType = 'skill' | 'achievement' | 'streak' | 'participation';
+export type AchievementType =
+  | 'interview_count'
+  | 'score_threshold'
+  | 'streak'
+  | 'skill_mastery';
+
+export interface Badge {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  earnedAt: string;
+  type: BadgeType;
+}
+
+export interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  progress: number;
+  target: number;
+  completed: boolean;
+  earnedAt?: string;
+  type: AchievementType;
+}
+
 interface User {
   id: string;
   email: string;
@@ -46,6 +73,8 @@ interface User {
   preferredRoles?: string[];
   createdAt: Date;
   updatedAt: Date;
+  badges: Badge[];
+  experiencePoints: number;
 }
 
 interface InterviewCardProps {
