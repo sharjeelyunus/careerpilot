@@ -108,6 +108,7 @@ interface GetFeedbackByInterviewIdParams {
 interface GetLatestInterviewsParams {
   userId?: string;
   limit?: number;
+  page?: number;
 }
 
 interface SignInParams {

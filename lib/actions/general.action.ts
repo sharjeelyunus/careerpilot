@@ -16,8 +16,10 @@ import { generateObject } from 'ai';
 import axios from 'axios';
 
 export async function getInterviewByUserId(
-  userId: string
-): Promise<Interview[]> {
+  userId: string,
+  page: number = 1,
+  pageSize: number = 10
+): Promise<{ interviews: Interview[]; total: number }> {
   try {
     // Step 1: Get feedback for user
     const feedbackSnapshot = await db
@@ -32,14 +34,25 @@ export async function getInterviewByUserId(
       feedbackMap.set(data.interviewId, { id: doc.id, ...data } as Feedback);
     });
 
-    // Step 2: Get all interviews for user
+    // Step 2: Get total count for pagination
+    const totalSnapshot = await db
+      .collection('interviews')
+      .where('userId', '==', userId)
+      .count()
+      .get();
+
+    const total = totalSnapshot.data().count;
+
+    // Step 3: Get paginated interviews
     const interviewsSnapshot = await db
       .collection('interviews')
       .where('userId', '==', userId)
       .orderBy('createdAt', 'desc')
+      .limit(pageSize)
+      .offset((page - 1) * pageSize)
       .get();
 
-    // Step 3: Build interview list with feedback embedded if available
+    // Step 4: Build interview list with feedback embedded if available
     const interviews: Interview[] = interviewsSnapshot.docs.map((doc) => {
       const interviewData = { id: doc.id, ...doc.data() } as Interview;
 
@@ -48,41 +61,51 @@ export async function getInterviewByUserId(
         return {
           ...interviewData,
           completed: true,
-          feedback, // 💡 push the actual feedback object here
+          feedback,
         };
       }
 
       return interviewData;
     });
 
-    return interviews;
+    return { interviews, total };
   } catch (error) {
     console.error('Error fetching interviews:', error);
-    return [];
+    return { interviews: [], total: 0 };
   }
 }
 
 export async function getLatestInterviews(
   params: GetLatestInterviewsParams
-): Promise<Interview[] | null> {
-  const { userId, limit = 20 } = params;
+): Promise<{ interviews: Interview[]; total: number }> {
+  const { userId, limit = 10, page = 1 } = params;
 
   let query = db
     .collection('interviews')
     .where('finalized', '==', true)
-    .orderBy('createdAt', 'desc')
-    .limit(limit);
+    .orderBy('createdAt', 'desc');
 
   if (userId) {
     query = query.where('userId', '!=', userId);
   }
 
-  const interviews = await query.get();
+  // Get total count
+  const totalSnapshot = await query.count().get();
+  const total = totalSnapshot.data().count;
 
-  return interviews.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  })) as Interview[];
+  // Get paginated results
+  const interviews = await query
+    .limit(limit)
+    .offset((page - 1) * limit)
+    .get();
+
+  return {
+    interviews: interviews.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as Interview[],
+    total,
+  };
 }
 
 export async function getInterviewById(id: string): Promise<Interview | null> {

@@ -25,12 +25,19 @@ export default function ProfilePage() {
   );
   const { data: userInterviews, isLoading: userInterviewsIsLoading } = useSWR(
     user?.id ? ['interviews-by-user', user.id] : null,
-    () => getInterviewByUserId(user?.id ?? '')
+    () => getInterviewByUserId(user?.id ?? '', 1, 10000)
   );
 
-  const progress = calculateUserProgress(user as User, userInterviews);
+  const progress = calculateUserProgress(
+    user as User,
+    userInterviews?.interviews ?? []
+  );
 
-  useBadgeSync({ user: user as User, progress, userInterviews });
+  useBadgeSync({
+    user: user as User,
+    progress,
+    userInterviews: userInterviews?.interviews ?? [],
+  });
 
   const handleProfileEdit = () => {
     setIsEditModalOpen(true);
