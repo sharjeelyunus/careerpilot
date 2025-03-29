@@ -98,7 +98,7 @@ export function calculateUserProgress(
 
     return {
       ...achievement,
-      progress,
+      progress: Number(progress),
       completed,
     };
   });
