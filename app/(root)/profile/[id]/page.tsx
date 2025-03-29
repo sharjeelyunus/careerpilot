@@ -20,8 +20,9 @@ export default function ProfilePage() {
   const { id } = useParams();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  const { data: user, isLoading: userIsLoading } = useSWR('user-by-id', () =>
-    getUserById(id as string)
+  const { data: user, isLoading: userIsLoading } = useSWR(
+    ['user-by-id', id],
+    () => getUserById(id as string)
   );
   const { data: userInterviews, isLoading: userInterviewsIsLoading } = useSWR(
     user?.id ? ['interviews-by-user', user.id] : null,

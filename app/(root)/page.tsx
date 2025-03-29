@@ -45,13 +45,13 @@ const HomePage = () => {
     getCurrentUser,
     {
       revalidateOnFocus: false,
-      dedupingInterval: 60000, // Cache for 1 minute
+      dedupingInterval: 30 * 60 * 1000,
     }
   );
 
   const { data: filterOptions } = useSWR('filter-options', getFilterOptions, {
     revalidateOnFocus: false,
-    dedupingInterval: 5 * 60 * 1000, // Cache for 5 minutes
+    dedupingInterval: 5 * 60 * 1000,
   });
 
   const { data: userInterviewsData, isLoading: isUserInterviewsLoading } =
@@ -75,7 +75,7 @@ const HomePage = () => {
         ),
       {
         revalidateOnFocus: false,
-        dedupingInterval: 30000, // Cache for 30 seconds
+        dedupingInterval: 120000,
       }
     );
 

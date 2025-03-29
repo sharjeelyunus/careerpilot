@@ -60,7 +60,11 @@ const LeaderboardPage = () => {
       </div>
       {users &&
         users.slice(3).map((user, index) => (
-          <div key={user.id} className='card-border w-full'>
+          <div
+            key={user.id}
+            className='card-border w-full'
+            onClick={() => redirect(`/profile/${user.id}`)}
+          >
             <div className='card p-4'>
               <div className=' flex text-center items-center gap-4'>
                 <div className='text-light-100'>{index + 4}.</div>

@@ -12,7 +12,10 @@ const ratelimit = new Ratelimit({
 
 export async function middleware(request: NextRequest) {
   // Skip rate limiting if Redis is not configured
-  if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
+  if (
+    !process.env.UPSTASH_REDIS_REST_URL ||
+    !process.env.UPSTASH_REDIS_REST_TOKEN
+  ) {
     const response = NextResponse.next();
     response.headers.set(
       'Cache-Control',
@@ -58,5 +61,11 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/api/:path*', '/interview/:path*', '/feedback/:path*'],
+  matcher: [
+    '/api/:path*',
+    '/interview/:path*',
+    '/feedback/:path*',
+    '/profile/:path*',
+    '/leaderboard',
+  ],
 };
