@@ -56,14 +56,16 @@ const HomePage = () => {
 
   const { data: userInterviewsData, isLoading: isUserInterviewsLoading } =
     useSWR(
-      user?.id
-        ? [
-            'interviews-by-user',
-            user.id,
-            userInterviewsPage,
-            debouncedSearch,
-            filters,
-          ]
+      !isUserLoading
+        ? user?.id
+          ? [
+              'interviews-by-user',
+              user.id,
+              userInterviewsPage,
+              debouncedSearch,
+              filters,
+            ]
+          : null
         : null,
       () =>
         getInterviewByUserId(
@@ -75,7 +77,7 @@ const HomePage = () => {
         ),
       {
         revalidateOnFocus: false,
-        dedupingInterval: 120000,
+        dedupingInterval: 30000,
       }
     );
 

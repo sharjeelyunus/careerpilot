@@ -90,8 +90,10 @@ const AuthForm = ({ type }: { type: FormType }) => {
         await signIn({ email, idToken });
 
         toast.success('Signed in successfully.');
-        await new Promise((resolve) => setTimeout(resolve, 100));
-        await mutate(() => true, undefined, { revalidate: false });
+        await mutate('current-user', undefined, { revalidate: true });
+        await mutate(['user-interviews'], undefined, { revalidate: true });
+        await mutate(['latest-interviews'], undefined, { revalidate: true });
+        await mutate('filter-options', undefined, { revalidate: true });
         router.push('/');
       }
     } catch (error) {
@@ -121,8 +123,10 @@ const AuthForm = ({ type }: { type: FormType }) => {
         return;
       }
       toast.success('Signed in with Google successfully.');
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      await mutate(() => true, undefined, { revalidate: false });
+      await mutate('current-user', undefined, { revalidate: true });
+      await mutate(['user-interviews'], undefined, { revalidate: true });
+      await mutate(['latest-interviews'], undefined, { revalidate: true });
+      await mutate('filter-options', undefined, { revalidate: true });
       router.push('/');
     } catch (error) {
       console.error('Error:', error);

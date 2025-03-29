@@ -18,27 +18,32 @@ import React, { ReactNode, useEffect } from 'react';
 import useSWR, { mutate } from 'swr';
 
 const RootLayout = ({ children }: { children: ReactNode }) => {
-  const { data: user, mutate: mutateUser } = useSWR(
+  const { data: user } = useSWR(
     'current-user',
     getCurrentUser,
     {
-      revalidateOnFocus: true,
-      revalidateOnReconnect: true,
-      dedupingInterval: 0,
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: 30 * 60 * 1000, // 30 minutes
     }
   );
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
       if (firebaseUser) {
-        await mutateUser();
+        // Revalidate all data when user logs in
+        await mutate('current-user', undefined, { revalidate: true });
+        await mutate(['user-interviews'], undefined, { revalidate: true });
+        await mutate(['latest-interviews'], undefined, { revalidate: true });
+        await mutate('filter-options', undefined, { revalidate: true });
       } else {
+        // Clear all data when user logs out
         await mutate(() => true, undefined, { revalidate: false });
       }
     });
 
     return () => unsubscribe();
-  }, [mutateUser]);
+  }, []);
 
   const handleSignOut = async () => {
     await signOut();
