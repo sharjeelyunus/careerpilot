@@ -38,29 +38,59 @@ const setCachedData = <T>(key: string, data: T) => {
 export async function getInterviewByUserId(
   userId: string,
   page: number = 1,
-  pageSize: number = 10
+  pageSize: number = 10,
+  search?: string,
+  filters?: {
+    type?: string[];
+    techstack?: string[];
+    level?: string[];
+  }
 ): Promise<{ interviews: Interview[]; total: number }> {
   try {
     if (!userId) {
       throw new Error('User ID is required');
     }
 
-    const cacheKey = `interviews-${userId}-${page}-${pageSize}`;
-    const cachedData = getCachedData<{ interviews: Interview[]; total: number }>(cacheKey);
+    const cacheKey = `interviews-${userId}-${page}-${pageSize}-${search}-${JSON.stringify(
+      filters
+    )}`;
+    const cachedData = getCachedData<{
+      interviews: Interview[];
+      total: number;
+    }>(cacheKey);
     if (cachedData) return cachedData;
 
+    let query = db.collection('interviews').where('userId', '==', userId);
+
+    // Apply filters
+    if (filters?.type && filters.type.length > 0) {
+      query = query.where('type', 'in', filters.type);
+    }
+    if (filters?.techstack && filters.techstack.length > 0) {
+      query = query.where('techstack', 'array-contains-any', filters.techstack);
+    }
+    if (filters?.level && filters.level.length > 0) {
+      query = query.where('level', 'in', filters.level);
+    }
+
+    // Apply search
+    if (search) {
+      query = query
+        .where('role', '>=', search)
+        .where('role', '<=', search + '\uf8ff');
+    }
+
     // Use batch operations for parallel queries
-    const [feedbackSnapshot, totalSnapshot, interviewsSnapshot] = await Promise.all([
-      db.collection('feedback').where('userId', '==', userId).get(),
-      db.collection('interviews').where('userId', '==', userId).count().get(),
-      db
-        .collection('interviews')
-        .where('userId', '==', userId)
-        .orderBy('createdAt', 'desc')
-        .limit(pageSize)
-        .offset((page - 1) * pageSize)
-        .get(),
-    ]);
+    const [feedbackSnapshot, totalSnapshot, interviewsSnapshot] =
+      await Promise.all([
+        db.collection('feedback').where('userId', '==', userId).get(),
+        query.count().get(),
+        query
+          .orderBy('createdAt', 'desc')
+          .limit(pageSize)
+          .offset((page - 1) * pageSize)
+          .get(),
+      ]);
 
     const feedbackMap = new Map<string, Feedback>();
     feedbackSnapshot.forEach((doc) => {
@@ -97,7 +127,7 @@ export async function getInterviewByUserId(
 export async function getLatestInterviews(
   params: GetLatestInterviewsParams
 ): Promise<{ interviews: Interview[]; total: number }> {
-  const { userId, limit = 10, page = 1 } = params;
+  const { userId, limit = 10, page = 1, search, filters } = params;
 
   try {
     let query = db
@@ -107,6 +137,24 @@ export async function getLatestInterviews(
 
     if (userId) {
       query = query.where('userId', '!=', userId);
+    }
+
+    // Apply filters
+    if (filters?.type && filters.type.length > 0) {
+      query = query.where('type', 'in', filters.type);
+    }
+    if (filters?.techstack && filters.techstack.length > 0) {
+      query = query.where('techstack', 'array-contains-any', filters.techstack);
+    }
+    if (filters?.level && filters.level.length > 0) {
+      query = query.where('level', 'in', filters.level);
+    }
+
+    // Apply search
+    if (search) {
+      query = query
+        .where('title', '>=', search)
+        .where('title', '<=', search + '\uf8ff');
     }
 
     // Get total count
@@ -256,4 +304,107 @@ export async function getLeaderboard(): Promise<User[]> {
     id: doc.id,
     ...doc.data(),
   })) as User[] | [];
+}
+
+export interface FilterOptions {
+  type: Array<{ value: string; label: string }>;
+  techstack: Array<{ value: string; label: string }>;
+  level: Array<{ value: string; label: string }>;
+}
+
+// Add this new function to update filter options
+export async function updateFilterOptions(interview: Interview) {
+  try {
+    const filterOptionsRef = db.collection('filters').doc('options');
+
+    // Get current options
+    const currentOptions = await filterOptionsRef.get();
+    const currentData = currentOptions.data() || {
+      types: new Set<string>(),
+      techstacks: new Set<string>(),
+      levels: new Set<string>(),
+    };
+
+    // Update sets with new values
+    currentData.types.add(interview.type);
+    interview.techstack.forEach((tech) => currentData.techstacks.add(tech));
+    currentData.levels.add(interview.level);
+
+    // Convert sets to arrays and save
+    await filterOptionsRef.set({
+      types: Array.from(currentData.types),
+      techstacks: Array.from(currentData.techstacks),
+      levels: Array.from(currentData.levels),
+      lastUpdated: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Error updating filter options:', error);
+  }
+}
+
+export async function getFilterOptions(): Promise<FilterOptions> {
+  try {
+    const cacheKey = 'filter-options';
+    const cachedData = getCachedData<FilterOptions>(cacheKey);
+    if (cachedData) return cachedData;
+
+    const filterOptionsDoc = await db
+      .collection('filters')
+      .doc('options')
+      .get();
+
+    if (!filterOptionsDoc.exists) {
+      return {
+        type: [],
+        techstack: [],
+        level: [],
+      };
+    }
+
+    const data = filterOptionsDoc.data();
+
+    // Format the options
+    const typeOptions = (data?.types || [])
+      .filter(Boolean)
+      .map((value: string) => ({
+        value,
+        label: value
+          .split('_')
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' '),
+      }));
+
+    const techStackOptions = (data?.techstacks || [])
+      .filter(Boolean)
+      .map((value: string) => ({
+        value,
+        label: value
+          .split('_')
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' '),
+      }));
+
+    const levelOptions = (data?.levels || [])
+      .filter(Boolean)
+      .map((value: string) => ({
+        value,
+        label: value.charAt(0).toUpperCase() + value.slice(1),
+      }));
+
+    const result = {
+      type: typeOptions,
+      techstack: techStackOptions,
+      level: levelOptions,
+    };
+
+    // Cache the result
+    setCachedData(cacheKey, result);
+    return result;
+  } catch (error) {
+    console.error('Error fetching filter options:', error);
+    if (error instanceof Error) {
+      throw new Error(`Failed to fetch filter options: ${error.message}`);
+    }
+    throw new Error('Failed to fetch filter options');
+  }
 }

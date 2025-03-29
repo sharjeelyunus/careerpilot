@@ -1,6 +1,7 @@
 import { generateText } from 'ai';
 import { google } from '@ai-sdk/google';
 import { db } from '@/firebase/admin';
+import { updateFilterOptions } from '@/lib/actions/general.action';
 
 export async function GET() {
   return Response.json(
@@ -47,6 +48,14 @@ export async function POST(request: Request) {
     };
 
     const interviewDoc = await db.collection('interviews').add(interview);
+
+    // Update filter options with the new interview
+    await updateFilterOptions({
+      id: interviewDoc.id,
+      ...interview,
+      completed: false,
+      feedback: null
+    });
 
     return Response.json(
       { success: true, interviewId: interviewDoc.id },

@@ -17,18 +17,28 @@ import { getCurrentUser } from '@/lib/actions/auth.action';
 import {
   getInterviewByUserId,
   getLatestInterviews,
+  getFilterOptions,
 } from '@/lib/actions/general.action';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import Link from 'next/link';
 import React, { useState } from 'react';
 import useSWR from 'swr';
+import Search from '@/components/Search';
+import { useDebounce } from '@/hooks/useDebounce';
 
 const ITEMS_PER_PAGE = 6;
 
 const HomePage = () => {
   const [userInterviewsPage, setUserInterviewsPage] = useState(1);
   const [latestInterviewsPage, setLatestInterviewsPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const [filters, setFilters] = useState({
+    type: [] as string[],
+    techstack: [] as string[],
+    level: [] as string[],
+  });
+  const debouncedSearch = useDebounce(search, 500);
 
   const { data: user, isLoading: isUserLoading } = useSWR(
     'current-user',
@@ -39,11 +49,30 @@ const HomePage = () => {
     }
   );
 
+  const { data: filterOptions } = useSWR('filter-options', getFilterOptions, {
+    revalidateOnFocus: false,
+    dedupingInterval: 5 * 60 * 1000, // Cache for 5 minutes
+  });
+
   const { data: userInterviewsData, isLoading: isUserInterviewsLoading } =
     useSWR(
-      user?.id ? ['interviews-by-user', user.id, userInterviewsPage] : null,
+      user?.id
+        ? [
+            'interviews-by-user',
+            user.id,
+            userInterviewsPage,
+            debouncedSearch,
+            filters,
+          ]
+        : null,
       () =>
-        getInterviewByUserId(user?.id ?? '', userInterviewsPage, ITEMS_PER_PAGE),
+        getInterviewByUserId(
+          user?.id ?? '',
+          userInterviewsPage,
+          ITEMS_PER_PAGE,
+          debouncedSearch,
+          filters
+        ),
       {
         revalidateOnFocus: false,
         dedupingInterval: 30000, // Cache for 30 seconds
@@ -52,12 +81,22 @@ const HomePage = () => {
 
   const { data: latestInterviewsData, isLoading: isLatestInterviewsLoading } =
     useSWR(
-      !isUserLoading ? ['latest-interviews', latestInterviewsPage, user?.id] : null,
+      !isUserLoading
+        ? [
+            'latest-interviews',
+            latestInterviewsPage,
+            user?.id,
+            debouncedSearch,
+            filters,
+          ]
+        : null,
       () =>
         getLatestInterviews({
           userId: user?.id,
           page: latestInterviewsPage,
           limit: ITEMS_PER_PAGE,
+          search: debouncedSearch,
+          filters,
         }),
       {
         revalidateOnFocus: false,
@@ -75,6 +114,33 @@ const HomePage = () => {
   const totalLatestPages = Math.ceil(
     (latestInterviewsData?.total ?? 0) / ITEMS_PER_PAGE
   );
+
+  const handleFilterChange = (key: keyof typeof filters, value: string) => {
+    setFilters((prev) => {
+      const currentValues = prev[key];
+      const newValues = currentValues.includes(value)
+        ? currentValues.filter((v) => v !== value)
+        : [...currentValues, value];
+      return { ...prev, [key]: newValues };
+    });
+    setUserInterviewsPage(1);
+    setLatestInterviewsPage(1);
+  };
+
+  const removeFilter = (key: keyof typeof filters, value: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      [key]: prev[key].filter((v) => v !== value),
+    }));
+    setUserInterviewsPage(1);
+    setLatestInterviewsPage(1);
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    setUserInterviewsPage(1);
+    setLatestInterviewsPage(1);
+  };
 
   return (
     <>
@@ -105,6 +171,20 @@ const HomePage = () => {
           className='max-sm:hidden'
         />
       </section>
+
+      {user?.id && (
+        <div className='flex flex-col gap-4 mt-8'>
+          <Search
+            filterOptions={
+              filterOptions ?? { type: [], techstack: [], level: [] }
+            }
+            onSearchChange={handleSearchChange}
+            onFilterChange={handleFilterChange}
+            onRemoveFilter={removeFilter}
+            filters={filters}
+          />
+        </div>
+      )}
 
       {isUserLoading || isUserInterviewsLoading ? (
         <SpinnerLoader />
@@ -188,7 +268,7 @@ const HomePage = () => {
                 <p>There are no new interviews available</p>
               )}
             </div>
-            {totalLatestPages > 1 && (
+            {totalLatestPages > 1 && user?.id && (
               <Pagination className='mt-4'>
                 <PaginationContent>
                   <PaginationItem>

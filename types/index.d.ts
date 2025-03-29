@@ -109,6 +109,12 @@ interface GetLatestInterviewsParams {
   userId?: string;
   limit?: number;
   page?: number;
+  search?: string;
+  filters?: {
+    type?: string[];
+    techstack?: string[];
+    level?: string[];
+  };
 }
 
 interface SignInParams {
