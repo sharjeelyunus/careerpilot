@@ -160,9 +160,9 @@ const HomePage = () => {
 
         <div className='relative z-10 flex flex-col md:flex-row items-center justify-between gap-8'>
           <div className='flex flex-col gap-4 max-w-2xl'>
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-primary-200/10 rounded-full flex items-center justify-center">
-                <Sparkles className="w-6 h-6 text-primary-200" />
+            <div className='flex items-center gap-3'>
+              <div className='w-12 h-12 bg-primary-200/10 rounded-full flex items-center justify-center'>
+                <Sparkles className='w-6 h-6 text-primary-200' />
               </div>
               <h1 className='text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary-200 via-light-100 to-primary-200 bg-clip-text text-transparent'>
                 Welcome, {user.name || 'Interviewer'}!
@@ -174,11 +174,7 @@ const HomePage = () => {
             </p>
 
             <div className='flex flex-col sm:flex-row gap-4 mt-2'>
-              <Modal
-                title='Start an Interview'
-                description='Generate an interview based on your role. Practice with it and get feedback on your performance.'
-                className='btn-primary group'
-              >
+              <Modal title='Start an Interview' className='btn-primary group'>
                 <InterviewForm />
               </Modal>
               <Button asChild variant='outline' className='btn-secondary group'>
@@ -219,20 +215,27 @@ const HomePage = () => {
               <div className='w-10 h-10 bg-primary-200/10 rounded-full flex items-center justify-center'>
                 <BarChart className='w-5 h-5 text-primary-200' />
               </div>
-              <div className="flex-1">
+              <div className='flex-1'>
                 <p className='text-sm text-light-100/70'>Your Progress</p>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 h-2 bg-dark-300 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-gradient-to-r from-primary-200 to-primary-300 rounded-full"
-                      style={{ 
-                        width: `${Math.min(100, ((userInterviewsData?.total || 0) / 10) * 100)}%`,
-                        transition: 'width 0.5s ease-in-out'
+                <div className='flex items-center gap-2'>
+                  <div className='flex-1 h-2 bg-dark-300 rounded-full overflow-hidden'>
+                    <div
+                      className='h-full bg-gradient-to-r from-primary-200 to-primary-300 rounded-full'
+                      style={{
+                        width: `${Math.min(
+                          100,
+                          ((userInterviewsData?.total || 0) / 10) * 100
+                        )}%`,
+                        transition: 'width 0.5s ease-in-out',
                       }}
                     />
                   </div>
-                  <span className="text-sm font-medium">
-                    {Math.min(100, Math.round(((userInterviewsData?.total || 0) / 10) * 100))}%
+                  <span className='text-sm font-medium'>
+                    {Math.min(
+                      100,
+                      Math.round(((userInterviewsData?.total || 0) / 10) * 100)
+                    )}
+                    %
                   </span>
                 </div>
               </div>
@@ -242,7 +245,7 @@ const HomePage = () => {
       </motion.section>
 
       {/* Search and Filters */}
-      <motion.div 
+      <motion.div
         className='mb-12 bg-dark-200/30 rounded-2xl p-6 border border-primary-200/10'
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -309,11 +312,7 @@ const HomePage = () => {
                 <p className='text-lg text-light-100/70 mb-4'>
                   You haven&apos;t taken any interviews yet
                 </p>
-                <Modal
-                  title='Start an Interview'
-                  description='Generate an interview based on your role. Practice with it and get feedback on your performance.'
-                  className='btn-primary group'
-                >
+                <Modal title='Start an Interview' className='btn-primary group'>
                   <InterviewForm />
                 </Modal>
               </motion.div>
