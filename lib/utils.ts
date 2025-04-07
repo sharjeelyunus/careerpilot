@@ -138,6 +138,6 @@ export function calculateUserProgress(
       (a) => !a.completed && a.progress > 0
     ) as Achievement[],
     level,
-    experiencePoints: user?.experiencePoints ?? experiencePoints,
+    experiencePoints,
   };
 }

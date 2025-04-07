@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
-import { mutate } from 'swr';
+import { User, UserProgress, Interview, Badge } from '@/types';
 import { updateUserProfile } from '@/lib/actions/general.action';
-import { User, Badge, UserProgress, Interview } from '@/types';
+import { mutate } from 'swr';
 
 interface UseBadgeSyncProps {
   user: User | undefined;
   progress: UserProgress;
-  userInterviews: Interview[] | undefined;
+  userInterviews: Interview[];
 }
 
 export function useBadgeSync({
@@ -19,13 +19,15 @@ export function useBadgeSync({
   useEffect(() => {
     if (!user || !userInterviews || hasSynced) return;
 
-    const newlyEarnedBadges = progress.badges.map((b) => ({
-      id: b.id,
-      earnedAt: new Date().toISOString(),
-    }));
+    const newlyEarnedBadges = progress.badges
+      .filter((badge) => !user.badges?.some((b) => b.id === badge.id))
+      .map((b) => ({
+        id: b.id,
+        earnedAt: new Date().toISOString(),
+      }));
 
     const shouldUpdate =
-      newlyEarnedBadges.length != user.badges?.length ||
+      newlyEarnedBadges.length > 0 ||
       user.experiencePoints !== progress.experiencePoints;
 
     if (shouldUpdate) {
@@ -35,6 +37,8 @@ export function useBadgeSync({
         experiencePoints: progress.experiencePoints,
       }).then(() => {
         mutate('current-user');
+        mutate('leaderboard');
+        window.dispatchEvent(new CustomEvent('experience-updated'));
         setHasSynced(true);
       });
     } else {
