@@ -20,15 +20,16 @@ export default function ProfilePage() {
   const { id } = useParams();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  // Use more aggressive refresh settings
+  // Optimize SWR configuration to reduce unnecessary fetches
   const { data: user, isLoading: userIsLoading, mutate: mutateUser } = useSWR(
     ['user-by-id', id],
     () => getUserById(id as string),
     {
-      refreshInterval: 5000, // Refresh every 5 seconds
-      revalidateOnFocus: true, // Revalidate when the page regains focus
-      revalidateOnMount: true, // Always revalidate on mount
-      dedupingInterval: 0, // Don't dedupe requests
+      refreshInterval: 30000, // Refresh every 30 seconds instead of 5
+      revalidateOnFocus: false, // Don't revalidate on focus
+      revalidateOnMount: true,
+      dedupingInterval: 5000, // Dedupe requests within 5 seconds
+      keepPreviousData: true, // Keep showing old data while fetching
     }
   );
   
@@ -36,10 +37,11 @@ export default function ProfilePage() {
     user?.id ? ['interviews-by-user', user.id] : null,
     () => getInterviewByUserId(user?.id ?? '', 1, 10000),
     {
-      refreshInterval: 5000, // Refresh every 5 seconds
-      revalidateOnFocus: true, // Revalidate when the page regains focus
-      revalidateOnMount: true, // Always revalidate on mount
-      dedupingInterval: 0, // Don't dedupe requests
+      refreshInterval: 30000, // Refresh every 30 seconds instead of 5
+      revalidateOnFocus: false, // Don't revalidate on focus
+      revalidateOnMount: true,
+      dedupingInterval: 5000, // Dedupe requests within 5 seconds
+      keepPreviousData: true, // Keep showing old data while fetching
     }
   );
 
@@ -48,7 +50,7 @@ export default function ProfilePage() {
     userInterviews?.interviews ?? []
   );
 
-  // Force a refresh of user data when the component mounts
+  // Only force refresh on mount
   useEffect(() => {
     mutateUser();
     if (user?.id) {
@@ -68,8 +70,10 @@ export default function ProfilePage() {
 
   const handleProfileSave = async (updatedProfile: User) => {
     await updateUserProfile(updatedProfile);
-    await mutateUser();
-    await mutateInterviews();
+    await Promise.all([
+      mutateUser(),
+      mutateInterviews()
+    ]);
   };
 
   if (userIsLoading || userInterviewsIsLoading) return <SpinnerLoader />;

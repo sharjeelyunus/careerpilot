@@ -19,16 +19,19 @@ export function useBadgeSync({
   useEffect(() => {
     if (!user || !userInterviews || hasSynced) return;
 
+    // Only get newly earned badges that the user doesn't already have
+    const existingBadgeIds = new Set(user.badges?.map(b => b.id) || []);
     const newlyEarnedBadges = progress.badges
-      .filter((badge) => !user.badges?.some((b) => b.id === badge.id))
-      .map((b) => ({
+      .filter(badge => !existingBadgeIds.has(badge.id))
+      .map(b => ({
         id: b.id,
         earnedAt: new Date().toISOString(),
       }));
 
+    // Only update if there are new badges or experience points have changed significantly
     const shouldUpdate =
       newlyEarnedBadges.length > 0 ||
-      user.experiencePoints !== progress.experiencePoints;
+      Math.abs(user.experiencePoints - progress.experiencePoints) > 10;
 
     if (shouldUpdate) {
       updateUserProfile({
@@ -36,10 +39,16 @@ export function useBadgeSync({
         badges: [...(user.badges || []), ...newlyEarnedBadges] as Badge[],
         experiencePoints: progress.experiencePoints,
       }).then(() => {
-        mutate('current-user');
-        mutate('leaderboard');
-        window.dispatchEvent(new CustomEvent('experience-updated'));
-        setHasSynced(true);
+        // Batch the mutations together
+        Promise.all([
+          mutate('current-user'),
+          mutate('leaderboard'),
+          mutate(['user-by-id', user.id]),
+          mutate(['interviews-by-user', user.id])
+        ]).then(() => {
+          window.dispatchEvent(new CustomEvent('experience-updated'));
+          setHasSynced(true);
+        });
       });
     } else {
       setHasSynced(true);
