@@ -14,19 +14,18 @@ import { getCurrentUser, signOut } from '@/lib/actions/auth.action';
 import Image from 'next/image';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import React, { ReactNode, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import useSWR, { mutate } from 'swr';
 
-const RootLayout = ({ children }: { children: ReactNode }) => {
-  const { data: user } = useSWR(
-    'current-user',
-    getCurrentUser,
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-      dedupingInterval: 30 * 60 * 1000, // 30 minutes
-    }
-  );
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const { data: user } = useSWR('current-user', getCurrentUser, {
+    revalidateOnFocus: false,
+    dedupingInterval: 30 * 60 * 1000,
+  });
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
@@ -90,6 +89,4 @@ const RootLayout = ({ children }: { children: ReactNode }) => {
       {children}
     </div>
   );
-};
-
-export default RootLayout;
+}

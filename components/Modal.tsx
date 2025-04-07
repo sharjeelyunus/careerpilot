@@ -12,13 +12,14 @@ interface ModalProps {
   title: string;
   description: string;
   children: React.ReactNode;
+  className?: string;
 }
 
-export function Modal({ title, description, children }: ModalProps) {
+export function Modal({ title, description, children, className }: ModalProps) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant='outline' className='btn-primary max-sm:w-full'>
+        <Button variant='outline' className={className}>
           {title}
         </Button>
       </DialogTrigger>
