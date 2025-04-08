@@ -1,20 +1,28 @@
 import { useEffect, useState } from 'react';
-import { User, UserProgress, Interview, Badge } from '@/types';
-import { updateUserProfile } from '@/lib/actions/general.action';
+import { User, Badge, Achievement, Interview } from '@/types';
+import { XPService } from '@/lib/services/xp.service';
 import { mutate } from 'swr';
 
 interface UseBadgeSyncProps {
   user: User | undefined;
-  progress: UserProgress;
+  progress: {
+    badges: Badge[];
+    experiencePoints: number;
+  };
   userInterviews: Interview[];
+  achievements: Achievement[];
+  streak: number;
 }
 
 export function useBadgeSync({
   user,
   progress,
   userInterviews,
+  achievements,
+  streak,
 }: UseBadgeSyncProps) {
   const [hasSynced, setHasSynced] = useState(false);
+  const xpService = XPService.getInstance();
 
   useEffect(() => {
     if (!user || !userInterviews || hasSynced) return;
@@ -28,17 +36,16 @@ export function useBadgeSync({
         earnedAt: new Date().toISOString(),
       }));
 
-    // Only update if there are new badges or experience points have changed significantly
-    const shouldUpdate =
-      newlyEarnedBadges.length > 0 ||
-      Math.abs(user.experiencePoints - progress.experiencePoints) > 10;
-
-    if (shouldUpdate) {
-      updateUserProfile({
-        ...user,
-        badges: [...(user.badges || []), ...newlyEarnedBadges] as Badge[],
-        experiencePoints: progress.experiencePoints,
-      }).then(() => {
+    // Only update if there are new badges
+    if (newlyEarnedBadges.length > 0) {
+      // Update XP and badges in a single transaction
+      xpService.calculateAndUpdateXP(
+        user.id,
+        userInterviews,
+        [...(user.badges || []), ...newlyEarnedBadges] as Badge[],
+        achievements,
+        streak
+      ).then(() => {
         // Batch the mutations together
         Promise.all([
           mutate('current-user'),
@@ -53,5 +60,5 @@ export function useBadgeSync({
     } else {
       setHasSynced(true);
     }
-  }, [user, userInterviews, progress, hasSynced]);
+  }, [user, userInterviews, progress, achievements, streak, hasSynced]);
 }

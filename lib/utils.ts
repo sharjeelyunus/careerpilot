@@ -136,7 +136,7 @@ export function calculateUserProgress(
     badges: badges as Badge[],
     achievements: achievements.filter(
       (a) => !a.completed && a.progress > 0
-    ) as Achievement[],
+    ) as unknown as Achievement[],
     level,
     experiencePoints,
   };
