@@ -54,10 +54,7 @@ export interface Achievement {
   id: string;
   name: string;
   description: string;
-  progress: {
-    completed: boolean;
-    value: number;
-  };
+  progress: number;
   target: number;
   completed: boolean;
   earnedAt?: string;

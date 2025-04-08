@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { UserProfileCard } from '@/components/UserProfileCard';
 import { UserProgressCard } from '@/components/UserProgressCard';
 import { EditProfileModal } from '@/components/EditProfileModal';
-import { User } from '@/types';
+import { User, UserProgress } from '@/types';
 import { getUserById } from '@/lib/actions/auth.action';
 import useSWR from 'swr';
 import {
@@ -21,19 +21,23 @@ export default function ProfilePage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // Optimize SWR configuration to reduce unnecessary fetches
-  const { data: user, isLoading: userIsLoading, mutate: mutateUser } = useSWR(
-    ['user-by-id', id],
-    () => getUserById(id as string),
-    {
-      refreshInterval: 30000, // Refresh every 30 seconds instead of 5
-      revalidateOnFocus: false, // Don't revalidate on focus
-      revalidateOnMount: true,
-      dedupingInterval: 5000, // Dedupe requests within 5 seconds
-      keepPreviousData: true, // Keep showing old data while fetching
-    }
-  );
-  
-  const { data: userInterviews, isLoading: userInterviewsIsLoading, mutate: mutateInterviews } = useSWR(
+  const {
+    data: user,
+    isLoading: userIsLoading,
+    mutate: mutateUser,
+  } = useSWR(['user-by-id', id], () => getUserById(id as string), {
+    refreshInterval: 30000, // Refresh every 30 seconds instead of 5
+    revalidateOnFocus: false, // Don't revalidate on focus
+    revalidateOnMount: true,
+    dedupingInterval: 5000, // Dedupe requests within 5 seconds
+    keepPreviousData: true, // Keep showing old data while fetching
+  });
+
+  const {
+    data: userInterviews,
+    isLoading: userInterviewsIsLoading,
+    mutate: mutateInterviews,
+  } = useSWR(
     user?.id ? ['interviews-by-user', user.id] : null,
     () => getInterviewByUserId(user?.id ?? '', 1, 10000),
     {
@@ -60,8 +64,10 @@ export default function ProfilePage() {
 
   useBadgeSync({
     user: user as User,
-    progress,
+    progress: progress as UserProgress,
     userInterviews: userInterviews?.interviews ?? [],
+    achievements: progress.achievements,
+    streak: progress.streak,
   });
 
   const handleProfileEdit = () => {
@@ -70,10 +76,7 @@ export default function ProfilePage() {
 
   const handleProfileSave = async (updatedProfile: User) => {
     await updateUserProfile(updatedProfile);
-    await Promise.all([
-      mutateUser(),
-      mutateInterviews()
-    ]);
+    await Promise.all([mutateUser(), mutateInterviews()]);
   };
 
   if (userIsLoading || userInterviewsIsLoading) return <SpinnerLoader />;

@@ -62,9 +62,7 @@ export class XPService {
     const highScores = interviews.filter(
       (i) => (i.feedback?.totalScore || 0) >= 90
     ).length;
-    const completedAchievements = achievements.filter(
-      (a) => a.progress.completed
-    ).length;
+    const completedAchievements = achievements.filter((a) => a.progress).length;
 
     return (
       completedInterviews * XP_MULTIPLIERS.INTERVIEW_COMPLETION +

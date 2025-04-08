@@ -13,16 +13,14 @@ import {
 } from 'lucide-react';
 import { UserProgress } from '@/types';
 import { motion } from 'framer-motion';
-import { XPService } from '@/lib/services/xp.service';
 
 interface UserProgressCardProps {
   progress: UserProgress;
 }
 
 export function UserProgressCard({ progress }: UserProgressCardProps) {
-  const xpService = XPService.getInstance();
   const levelProgress = (progress.experiencePoints % 1000) / 10;
-  const nextLevelXP = xpService.calculateXPToNextLevel(progress.level);
+  const nextLevelXP = progress.level * 1000 - progress.experiencePoints;
 
   return (
     <motion.div
@@ -147,7 +145,7 @@ export function UserProgressCard({ progress }: UserProgressCardProps) {
                         </div>
                         <div className='flex items-center space-x-2'>
                           <span className='text-xs font-medium text-primary-200'>
-                            {achievement.progress.value}/{achievement.target}
+                            {achievement.progress}/{achievement.target}
                           </span>
                           <ChevronRight className='h-4 w-4 text-primary-200/50 group-hover:text-primary-200 transition-colors' />
                         </div>
@@ -157,7 +155,7 @@ export function UserProgressCard({ progress }: UserProgressCardProps) {
                           className='h-full bg-gradient-to-r from-primary-200 to-primary-300 transition-all duration-300'
                           style={{
                             width: `${
-                              (achievement.progress.value / achievement.target) * 100
+                              (achievement.progress / achievement.target) * 100
                             }%`,
                           }}
                         />
