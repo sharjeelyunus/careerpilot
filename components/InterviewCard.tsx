@@ -26,36 +26,43 @@ const InterviewCard = React.memo(
     techstack,
     createdAt,
     level,
-    feedback,
+    feedbacks,
   }: InterviewCardProps) => {
     const normalizedType = useMemo(
       () => (/mix/gi.test(type) ? 'Mixed' : type),
       [type]
     );
 
+    const latestFeedback = useMemo(() => {
+      if (!feedbacks || feedbacks.length === 0) return null;
+      return feedbacks[0];
+    }, [feedbacks]);
+
     const formattedDate = useMemo(
-      () => dayjs(feedback?.createdAt || createdAt).format('MMM D, YYYY'),
-      [feedback?.createdAt, createdAt]
+      () => dayjs(latestFeedback?.createdAt || createdAt).format('MMM D, YYYY'),
+      [latestFeedback?.createdAt, createdAt]
     );
 
     const truncatedAssessment = useMemo(() => {
-      if (!feedback?.finalAssessment) {
+      if (!latestFeedback?.finalAssessment) {
         return "You haven't taken the interview yet. Take it now to improve your skills.";
       }
-      return feedback.finalAssessment.length > 100
-        ? feedback.finalAssessment.slice(0, 100) + '...'
-        : feedback.finalAssessment;
-    }, [feedback?.finalAssessment]);
+      return latestFeedback.finalAssessment.length > 100
+        ? latestFeedback.finalAssessment.slice(0, 100) + '...'
+        : latestFeedback.finalAssessment;
+    }, [latestFeedback?.finalAssessment]);
 
     const interviewLink = useMemo(() => {
       if (!userId) return 'sign-in';
-      return feedback ? `/interview/${id}/feedback` : `/interview/${id}`;
-    }, [userId, feedback, id]);
+      return feedbacks && feedbacks.length > 0
+        ? `/interview/${id}/feedback`
+        : `/interview/${id}`;
+    }, [userId, feedbacks, id]);
 
     const status = useMemo(() => {
-      if (feedback) return 'completed';
+      if (feedbacks && feedbacks.length > 0) return 'completed';
       return 'available';
-    }, [feedback]);
+    }, [feedbacks]);
 
     const statusColor = useMemo(() => {
       return status === 'completed'
@@ -76,12 +83,12 @@ const InterviewCard = React.memo(
     }, [status]);
 
     const scoreColor = useMemo(() => {
-      if (!feedback?.totalScore) return 'text-light-100/70';
-      const score = feedback.totalScore;
+      if (!latestFeedback?.totalScore) return 'text-light-100/70';
+      const score = latestFeedback.totalScore;
       if (score >= 80) return 'text-green-400';
       if (score >= 60) return 'text-yellow-400';
       return 'text-red-400';
-    }, [feedback?.totalScore]);
+    }, [latestFeedback?.totalScore]);
 
     return (
       <motion.div
@@ -111,7 +118,10 @@ const InterviewCard = React.memo(
 
             {/* Role Title */}
             <div className='absolute bottom-4 left-4 right-4'>
-              <h3 className='text-xl font-bold capitalize text-light-100 truncate' title={role}>
+              <h3
+                className='text-xl font-bold capitalize text-light-100 truncate'
+                title={role}
+              >
                 {role}
               </h3>
             </div>
@@ -129,13 +139,13 @@ const InterviewCard = React.memo(
                 <Calendar size={16} className='text-primary-200' />
                 <span className='text-sm font-medium'>{formattedDate}</span>
               </div>
-              {feedback && (
+              {latestFeedback && (
                 <div
                   className={`flex items-center gap-1.5 ${scoreColor} bg-dark-300/50 px-3 py-1.5 rounded-full`}
                 >
                   <Star size={16} className='text-current' />
                   <span className='text-sm font-medium'>
-                    {feedback.totalScore || '---'}/100
+                    {latestFeedback.totalScore || '---'}/100
                   </span>
                 </div>
               )}
@@ -163,10 +173,12 @@ const InterviewCard = React.memo(
                 }`}
               >
                 <Link href={interviewLink} className='flex items-center gap-2'>
-                  {feedback ? (
+                  {feedbacks && feedbacks.length > 0 ? (
                     <>
                       <MessageSquare className='w-4 h-4' />
-                      <span>View Feedback</span>
+                      <span>
+                        View Feedback{feedbacks.length > 1 ? 's' : ''}
+                      </span>
                     </>
                   ) : (
                     <>

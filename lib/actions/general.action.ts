@@ -92,21 +92,28 @@ export async function getInterviewByUserId(
           .get(),
       ]);
 
-    const feedbackMap = new Map<string, Feedback>();
+    const feedbackMap = new Map<string, Feedback[]>();
     feedbackSnapshot.forEach((doc) => {
       const data = doc.data();
-      feedbackMap.set(data.interviewId, { id: doc.id, ...data } as Feedback);
+      const feedback = { id: doc.id, ...data } as Feedback;
+      if (!feedbackMap.has(data.interviewId)) {
+        feedbackMap.set(data.interviewId, []);
+      }
+      feedbackMap.get(data.interviewId)?.push(feedback);
     });
 
     const total = totalSnapshot.data().count;
     const interviews: Interview[] = interviewsSnapshot.docs.map((doc) => {
       const interviewData = { id: doc.id, ...doc.data() } as Interview;
-      const feedback = feedbackMap.get(doc.id);
-      if (feedback) {
+      const feedbacks = feedbackMap.get(doc.id);
+      if (feedbacks && feedbacks.length > 0) {
         return {
           ...interviewData,
           completed: true,
-          feedback,
+          feedbacks: feedbacks.sort(
+            (a, b) =>
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          ),
         };
       }
       return interviewData;
@@ -258,24 +265,22 @@ export async function createFeedback(params: CreateFeedbackParams) {
 
 export async function getFeedbackByInterviewId(
   params: GetFeedbackByInterviewIdParams
-): Promise<Feedback | null> {
+): Promise<Feedback[] | null> {
   const { interviewId, userId } = params;
 
-  const feedback = await db
+  const feedbacks = await db
     .collection('feedback')
     .where('interviewId', '==', interviewId)
     .where('userId', '==', userId)
-    .limit(1)
+    .orderBy('createdAt', 'desc')
     .get();
 
-  if (feedback.empty) return null;
+  if (feedbacks.empty) return null;
 
-  const feedbackDoc = feedback.docs[0];
-
-  return {
-    id: feedbackDoc.id,
-    ...feedbackDoc.data(),
-  } as Feedback;
+  return feedbacks.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  })) as Feedback[];
 }
 
 export async function generateInterview(params: GenerateInterviewParams) {
@@ -292,7 +297,7 @@ export async function updateUserProfile(params: User) {
   const userRef = db.collection('users').doc(id);
 
   await userRef.update(userData);
-  
+
   // Dispatch a custom event to notify that experience points have been updated
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('experience-updated'));

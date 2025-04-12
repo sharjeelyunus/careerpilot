@@ -24,7 +24,7 @@ interface Interview {
   type: string;
   finalized: boolean;
   completed: boolean;
-  feedback?: Feedback | null;
+  feedbacks?: Feedback[] | null;
 }
 
 interface CreateFeedbackParams {
@@ -83,7 +83,7 @@ interface InterviewCardProps {
   techstack: string[];
   createdAt?: string;
   level: string;
-  feedback?: Feedback | null;
+  feedbacks?: Feedback[] | null;
 }
 
 interface AgentProps {
