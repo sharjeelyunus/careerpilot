@@ -6,7 +6,12 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "analyze": "ANALYZE=true next build",
+    "clean": "rm -rf .next",
+    "prebuild": "npm run clean",
+    "postbuild": "next-sitemap",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@ai-sdk/google": "^1.2.1",
@@ -45,7 +50,9 @@
     "tailwind-merge": "^3.0.2",
     "tailwindcss-animate": "^1.0.7",
     "tw-animate-css": "^1.2.4",
-    "zod": "^3.24.2"
+    "zod": "^3.24.2",
+    "@sentry/nextjs": "^8.0.0",
+    "next-seo": "^6.4.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -56,6 +63,8 @@
     "eslint": "^9",
     "eslint-config-next": "15.2.3",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "@next/bundle-analyzer": "^15.2.3",
+    "webpack-bundle-analyzer": "^4.10.1"
   }
 }

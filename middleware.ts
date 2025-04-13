@@ -10,6 +10,17 @@ const ratelimit = new Ratelimit({
   analytics: true,
 });
 
+// Security headers configuration
+const securityHeaders = {
+  'X-DNS-Prefetch-Control': 'on',
+  'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload',
+  'X-XSS-Protection': '1; mode=block',
+  'X-Frame-Options': 'SAMEORIGIN',
+  'X-Content-Type-Options': 'nosniff',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+};
+
 export async function middleware(request: NextRequest) {
   // Skip rate limiting if Redis is not configured
   if (
@@ -17,6 +28,7 @@ export async function middleware(request: NextRequest) {
     !process.env.UPSTASH_REDIS_REST_TOKEN
   ) {
     const response = NextResponse.next();
+    addSecurityHeaders(response);
     response.headers.set(
       'Cache-Control',
       'public, max-age=300, stale-while-revalidate=60'
@@ -36,6 +48,7 @@ export async function middleware(request: NextRequest) {
 
     // Add rate limit headers
     const response = NextResponse.next();
+    addSecurityHeaders(response);
     response.headers.set('X-RateLimit-Limit', limit.toString());
     response.headers.set('X-RateLimit-Remaining', remaining.toString());
     response.headers.set('X-RateLimit-Reset', reset.toString());
@@ -56,8 +69,16 @@ export async function middleware(request: NextRequest) {
   } catch (error) {
     console.error('Rate limiting error:', error);
     // If rate limiting fails, allow the request to proceed
-    return NextResponse.next();
+    const response = NextResponse.next();
+    addSecurityHeaders(response);
+    return response;
   }
+}
+
+function addSecurityHeaders(response: NextResponse) {
+  Object.entries(securityHeaders).forEach(([key, value]) => {
+    response.headers.set(key, value);
+  });
 }
 
 export const config = {
