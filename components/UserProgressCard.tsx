@@ -13,14 +13,25 @@ import {
 } from 'lucide-react';
 import { UserProgress } from '@/types';
 import { motion } from 'framer-motion';
+import { XPService } from '@/lib/services/xp.service';
+import { LEVEL_FORMULA } from '@/lib/xp';
 
 interface UserProgressCardProps {
   progress: UserProgress;
 }
 
 export function UserProgressCard({ progress }: UserProgressCardProps) {
-  const levelProgress = (progress.experiencePoints % 1000) / 10;
-  const nextLevelXP = progress.level * 1000 - progress.experiencePoints;
+  const xpService = XPService.getInstance();
+  const currentLevel = xpService.calculateLevel(progress.experiencePoints);
+  const nextLevelXP = xpService.calculateXPToNextLevel(currentLevel);
+  const currentLevelXP = xpService.calculateXPForLevel(currentLevel);
+  
+  // Calculate progress percentage, ensuring it's between 0 and 100
+  const levelProgress = Math.min(100, Math.max(0, 
+    currentLevel === 1 
+      ? (progress.experiencePoints / LEVEL_FORMULA.BASE_XP) * 100
+      : ((progress.experiencePoints - currentLevelXP) / (nextLevelXP - currentLevelXP)) * 100
+  ));
 
   return (
     <motion.div
@@ -59,7 +70,7 @@ export function UserProgressCard({ progress }: UserProgressCardProps) {
                     <Star className='h-4 w-4 text-primary-200' />
                   </div>
                   <span className='text-sm font-medium text-light-100'>
-                    Level {progress.level}
+                    Level {currentLevel}
                   </span>
                 </div>
                 <div className='flex flex-col items-end'>
@@ -67,7 +78,7 @@ export function UserProgressCard({ progress }: UserProgressCardProps) {
                     {progress.experiencePoints} XP
                   </span>
                   <span className='text-xs text-light-100/50'>
-                    {nextLevelXP} XP to next level
+                    {Math.max(0, nextLevelXP - progress.experiencePoints)} XP to next level
                   </span>
                 </div>
               </div>

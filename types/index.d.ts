@@ -73,6 +73,8 @@ interface User {
   preferredRoles?: string[];
   badges: Badge[];
   experiencePoints: number;
+  streak: number;
+  achievements: Achievement[];
 }
 
 interface InterviewCardProps {

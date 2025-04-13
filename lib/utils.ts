@@ -3,9 +3,8 @@ import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import dayjs from 'dayjs';
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
-import { ACHIEVEMENTS } from '@/constants/achievemnts';
-import { BADGES } from '@/constants/badges';
 import { User, Interview, UserProgress, Badge, Achievement } from '@/types';
+import { XPService } from '@/lib/services/xp.service';
 
 dayjs.extend(isSameOrAfter);
 
@@ -52,91 +51,46 @@ export function calculateUserProgress(
   user: User | undefined,
   userInterviews: Interview[] | undefined
 ): UserProgress {
-  const completedInterviews =
-    userInterviews?.filter((interview) => interview.feedback).length || 0;
+  const completedInterviews = userInterviews?.filter(
+    (interview) => interview.feedbacks?.length
+  ).length ?? 0;
 
-  const totalScore =
-    userInterviews?.reduce((acc, interview) => {
-      return acc + (interview.feedback?.totalScore || 0);
-    }, 0) || 0;
+  const averageScore = userInterviews?.length
+    ? userInterviews.reduce((acc, interview) => {
+        if (!interview.feedbacks?.length) return acc;
+        
+        const interviewScore = interview.feedbacks.reduce(
+          (feedbackAcc, feedback) => feedbackAcc + feedback.totalScore,
+          0
+        ) / interview.feedbacks.length;
+        
+        return acc + interviewScore;
+      }, 0) / completedInterviews
+    : 0;
 
-  const streak = (() => {
-    if (!userInterviews || userInterviews.length === 0) return 0;
+  const streak = user?.streak ?? 0;
+  const badges = user?.badges ?? [];
+  const achievements = user?.achievements ?? [];
 
-    const completed = userInterviews
-      .filter((interview) => interview.feedback && interview.createdAt)
-      .map((interview) => ({
-        ...interview,
-        date: dayjs(interview.createdAt),
-      }))
-      .sort((a, b) => b.date.valueOf() - a.date.valueOf());
-
-    let streakCount = 0;
-    let currentDate = dayjs();
-
-    for (const interview of completed) {
-      if (interview.date.isSame(currentDate, 'day')) {
-        streakCount++;
-        currentDate = currentDate.subtract(1, 'day');
-      } else {
-        break;
-      }
-    }
-
-    return streakCount;
-  })();
-
-  const achievements = ACHIEVEMENTS.map((achievement) => {
-    const progress = achievement.getProgress(
-      completedInterviews,
-      userInterviews ?? []
-    );
-    const completed = achievement.isCompleted(
-      completedInterviews,
-      userInterviews ?? []
-    );
-
-    return {
-      ...achievement,
-      progress: Number(progress),
-      completed,
-    };
-  });
-
-  const badges =
-    user?.badges && user.badges.length > 0
-      ? BADGES.filter((badge) => user.badges.some((b) => b.id === badge.id))
-      : (achievements
-          .filter((a) => a.completed)
-          .map((achievement) => {
-            const matchedBadge = BADGES.find(
-              (badge) =>
-                badge.name === achievement.name ||
-                badge.type === achievement.type
-            );
-            return matchedBadge || null;
-          })
-          .filter(Boolean) as unknown as Badge[]);
-
-  const experiencePoints =
-    completedInterviews * 100 +
-    streak * 100 +
-    badges.reduce((acc) => acc + 100, 0);
-
-  const level = 1 + Math.floor(experiencePoints / 1000);
+  const xpService = XPService.getInstance();
+  const experiencePoints = xpService.calculateXP(
+    userInterviews ?? [],
+    badges,
+    achievements,
+    streak
+  );
+  const level = xpService.calculateLevel(experiencePoints);
 
   return {
     userId: user?.id ?? '',
     totalInterviews: userInterviews?.length ?? 0,
     completedInterviews,
-    averageScore: userInterviews?.length
-      ? totalScore / userInterviews.length
-      : 0,
+    averageScore,
     streak,
     badges: badges as Badge[],
     achievements: achievements.filter(
-      (a) => !a.completed && a.progress > 0
-    ) as unknown as Achievement[],
+      (achievement: Achievement) => !achievement.completed && achievement.progress > 0
+    ),
     level,
     experiencePoints,
   };

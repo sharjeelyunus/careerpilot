@@ -7,7 +7,7 @@ export class XPService {
   private static instance: XPService;
   private constructor() {}
 
-  static getInstance(): XPService {
+  public static getInstance(): XPService {
     if (!XPService.instance) {
       XPService.instance = new XPService();
     }
@@ -62,7 +62,7 @@ export class XPService {
     throw new Error('Failed to update XP after maximum retries');
   }
 
-  private calculateXP(
+  public calculateXP(
     interviews: Interview[],
     badges: Badge[],
     achievements: Achievement[],
@@ -90,6 +90,9 @@ export class XPService {
   }
 
   calculateLevel(xp: number): number {
+    if (xp < LEVEL_FORMULA.BASE_XP) {
+      return 1;
+    }
     return Math.floor(
       1 +
         Math.log(xp / LEVEL_FORMULA.BASE_XP) /
@@ -98,9 +101,24 @@ export class XPService {
   }
 
   calculateXPToNextLevel(currentLevel: number): number {
+    if (currentLevel < 1) {
+      return LEVEL_FORMULA.BASE_XP;
+    }
+    // Calculate XP needed for the next level
     return Math.floor(
       LEVEL_FORMULA.BASE_XP *
-        Math.pow(LEVEL_FORMULA.SCALING_FACTOR, currentLevel - 1)
+        Math.pow(LEVEL_FORMULA.SCALING_FACTOR, currentLevel)
+    );
+  }
+
+  calculateXPForLevel(level: number): number {
+    if (level <= 1) {
+      return 0;
+    }
+    // Calculate XP needed to reach this level
+    return Math.floor(
+      LEVEL_FORMULA.BASE_XP *
+        Math.pow(LEVEL_FORMULA.SCALING_FACTOR, level - 1)
     );
   }
 }
