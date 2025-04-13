@@ -12,6 +12,12 @@ import { motion } from 'framer-motion';
 export function UserProfileCard({ profile, onEdit }: UserProfileCardProps) {
   const { data: user } = useSWR('current-user', getCurrentUser);
 
+  const skills = user?.skills || [];
+  const preferredRoles = user?.preferredRoles || [];
+
+  const hasRequiredData =
+    skills.length > 0 && user?.experience && preferredRoles.length > 0;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -37,14 +43,14 @@ export function UserProfileCard({ profile, onEdit }: UserProfileCardProps) {
                 variant='outline'
                 size='icon'
                 onClick={onEdit}
-                className='absolute top-4 right-4 z-10 bg-dark-300/50 border-primary-200/20 hover:bg-primary-200/10 hover:border-primary-200/30 backdrop-blur-sm'
+                className='absolute top-4 right-4 z-20 bg-dark-300/50 border-primary-200/20 hover:bg-primary-200/10 hover:border-primary-200/30 backdrop-blur-sm'
               >
                 <Edit2 className='h-4 w-4 text-primary-200' />
               </Button>
             )}
 
             {/* Avatar */}
-            <div className='absolute -bottom-12 left-6 z-10'>
+            <div className='absolute -bottom-12 left-6 z-20'>
               <Avatar className='h-24 w-24 border-4 border-dark-300 shadow-lg ring-2 ring-primary-200/30'>
                 <AvatarImage src={profile?.photoURL} />
                 <AvatarFallback className='bg-primary-200/10 text-primary-200 text-xl'>
@@ -59,7 +65,7 @@ export function UserProfileCard({ profile, onEdit }: UserProfileCardProps) {
           </div>
 
           {/* User info */}
-          <div className='pt-16 px-6 pb-4'>
+          <div className='relative pt-16 px-6 pb-4 z-20'>
             <h3 className='text-2xl font-bold bg-gradient-to-r from-primary-200 via-light-100 to-primary-200 bg-clip-text text-transparent'>
               {profile?.name || 'Anonymous User'}
             </h3>
@@ -73,6 +79,17 @@ export function UserProfileCard({ profile, onEdit }: UserProfileCardProps) {
                   <MapPin className='h-4 w-4 text-primary-200' />
                   <p className='text-sm'>{profile.location}</p>
                 </div>
+              )}
+
+              {/* Complete Profile Button */}
+              {!hasRequiredData && user?.id === profile?.id && (
+                <Button
+                  variant='outline'
+                  className='bg-primary-200/10 text-primary-200 border-primary-200/20 hover:bg-primary-200/20 transition-colors mt-4 relative z-20'
+                  onClick={() => onEdit()}
+                >
+                  Complete Profile
+                </Button>
               )}
             </div>
           </div>
