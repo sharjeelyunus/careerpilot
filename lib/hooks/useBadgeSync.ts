@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { User, Badge, Achievement, Interview, UserProgress } from '@/types';
 import { XPService } from '@/lib/services/xp.service';
 import { mutate } from 'swr';
@@ -21,8 +21,9 @@ export function useBadgeSync({
   const [hasSynced, setHasSynced] = useState(false);
   const xpService = XPService.getInstance();
 
-  useEffect(() => {
+  const syncBadges = useCallback(async () => {
     if (!user || !userInterviews || hasSynced) return;
+    
     // Only get newly earned badges that the user doesn't already have
     const existingBadgeIds = new Set(user.badges?.map((b) => b.id) || []);
     const newlyEarnedBadges = progress.badges
@@ -32,25 +33,28 @@ export function useBadgeSync({
         earnedAt: new Date().toISOString(),
       }));
 
+    if (newlyEarnedBadges.length === 0) return;
+
     // Update XP and badges in a single transaction
-    xpService
-      .calculateAndUpdateXP(
-        user.id,
-        userInterviews,
-        [...(user.badges || []), ...newlyEarnedBadges] as Badge[],
-        achievements,
-        streak
-      )
-      .then(() => {
-        // Batch the mutations together
-        Promise.all([
-          mutate('current-user'),
-          mutate('leaderboard'),
-          mutate(['user-by-id', user.id]),
-          mutate(['interviews-by-user', user.id]),
-        ]).then(() => {
-          setHasSynced(true);
-        });
-      });
+    await xpService.calculateAndUpdateXP(
+      user.id,
+      userInterviews,
+      [...(user.badges || []), ...newlyEarnedBadges] as Badge[],
+      achievements,
+      streak
+    );
+
+    // Only mutate the necessary data
+    await Promise.all([
+      mutate(['user-by-id', user.id]),
+      mutate('leaderboard'),
+    ]);
+    
+    setHasSynced(true);
   }, [user, userInterviews, progress, achievements, streak, hasSynced]);
+
+  useEffect(() => {
+    const timeoutId = setTimeout(syncBadges, 1000); // Debounce for 1 second
+    return () => clearTimeout(timeoutId);
+  }, [syncBadges]);
 }

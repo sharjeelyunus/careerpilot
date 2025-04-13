@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { UserProfileCard } from '@/components/UserProfileCard';
 import { UserProgressCard } from '@/components/UserProgressCard';
 import { EditProfileModal } from '@/components/EditProfileModal';
@@ -26,11 +26,11 @@ export default function ProfilePage() {
     isLoading: userIsLoading,
     mutate: mutateUser,
   } = useSWR(['user-by-id', id], () => getUserById(id as string), {
-    refreshInterval: 30000, // Refresh every 30 seconds instead of 5
-    revalidateOnFocus: false, // Don't revalidate on focus
+    refreshInterval: 60000, // Refresh every 60 seconds
+    revalidateOnFocus: false,
     revalidateOnMount: true,
-    dedupingInterval: 5000, // Dedupe requests within 5 seconds
-    keepPreviousData: true, // Keep showing old data while fetching
+    dedupingInterval: 10000, // Dedupe requests within 10 seconds
+    keepPreviousData: true,
   });
 
   const {
@@ -41,11 +41,11 @@ export default function ProfilePage() {
     user?.id ? ['interviews-by-user', user.id] : null,
     () => getInterviewByUserId(user?.id ?? '', 1, 10000),
     {
-      refreshInterval: 30000, // Refresh every 30 seconds instead of 5
-      revalidateOnFocus: false, // Don't revalidate on focus
+      refreshInterval: 60000, // Refresh every 60 seconds
+      revalidateOnFocus: false,
       revalidateOnMount: true,
-      dedupingInterval: 5000, // Dedupe requests within 5 seconds
-      keepPreviousData: true, // Keep showing old data while fetching
+      dedupingInterval: 10000, // Dedupe requests within 10 seconds
+      keepPreviousData: true,
     }
   );
 
@@ -53,14 +53,6 @@ export default function ProfilePage() {
     user as User,
     userInterviews?.interviews ?? []
   );
-
-  // Only force refresh on mount
-  useEffect(() => {
-    mutateUser();
-    if (user?.id) {
-      mutateInterviews();
-    }
-  }, [mutateUser, mutateInterviews, user?.id]);
 
   useBadgeSync({
     user: user as User,

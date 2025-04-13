@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Mona_Sans } from 'next/font/google';
 import './globals.css';
-import { Toaster } from 'sonner';
+import { Providers } from '@/components/providers';
 
 const monaSans = Mona_Sans({
   variable: '--font-mona-sans',
@@ -15,14 +15,13 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: {
+  children: React.ReactNode
+}) {
   return (
-    <html lang='en' className='dark'>
+    <html lang="en" suppressHydrationWarning>
       <body className={`${monaSans.className} antialiased pattern`}>
-        {children}
-        <Toaster />
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

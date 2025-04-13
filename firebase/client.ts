@@ -2,6 +2,8 @@ import { getApp, getApps, initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
+import { getAnalytics, isSupported } from 'firebase/analytics';
+import { getPerformance } from 'firebase/performance';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -14,7 +16,17 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+export const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+
+// Initialize Analytics if supported (browser only)
+if (typeof window !== 'undefined') {
+  isSupported().then(yes => yes && getAnalytics(app));
+}
+
+// Initialize Performance Monitoring
+if (typeof window !== 'undefined') {
+  getPerformance(app);
+}
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);
