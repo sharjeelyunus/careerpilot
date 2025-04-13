@@ -40,7 +40,6 @@ export class XPService {
           );
 
           if (newXP !== currentXP) {
-            console.log(`Updating XP from ${currentXP} to ${newXP}`);
             transaction.update(userRef, { experiencePoints: newXP });
           }
 
