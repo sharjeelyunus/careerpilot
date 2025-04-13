@@ -22,6 +22,7 @@ interface FormFieldProps<T extends FieldValues> {
   placeholder?: string;
   type?: 'text' | 'email' | 'password' | 'file' | 'number' | 'dropdown';
   options?: DropdownOption[];
+  autoComplete?: string;
 }
 
 type DropdownOption = {
@@ -36,6 +37,7 @@ const FormField = <T extends FieldValues>({
   placeholder,
   type = 'text',
   options,
+  autoComplete,
 }: FormFieldProps<T>) => (
   <Controller
     control={control}
@@ -68,6 +70,7 @@ const FormField = <T extends FieldValues>({
                 className='input'
                 placeholder={placeholder}
                 type={type}
+                autoComplete={autoComplete}
                 {...field}
               />
             </FormControl>

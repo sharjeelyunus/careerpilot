@@ -325,22 +325,26 @@ export async function updateFilterOptions(interview: Interview) {
     // Get current options
     const currentOptions = await filterOptionsRef.get();
     const currentData = currentOptions.data() || {
-      types: new Set<string>(),
-      techstacks: new Set<string>(),
-      levels: new Set<string>(),
+      types: [],
+      techstacks: [],
+      levels: [],
     };
 
+    // Convert arrays to Sets
+    const typesSet = new Set(currentData.types || []);
+    const techstacksSet = new Set(currentData.techstacks || []);
+    const levelsSet = new Set(currentData.levels || []);
+
     // Update sets with new values
-    currentData.types.add(interview.type);
-    interview.techstack.forEach((tech) => currentData.techstacks.add(tech));
-    currentData.levels.add(interview.level);
+    typesSet.add(interview.type);
+    interview.techstack.forEach((tech) => techstacksSet.add(tech));
+    levelsSet.add(interview.level);
 
     // Convert sets to arrays and save
     await filterOptionsRef.set({
-      types: Array.from(currentData.types),
-      techstacks: Array.from(currentData.techstacks),
-      levels: Array.from(currentData.levels),
-      lastUpdated: new Date().toISOString(),
+      types: Array.from(typesSet),
+      techstacks: Array.from(techstacksSet),
+      levels: Array.from(levelsSet),
     });
   } catch (error) {
     console.error('Error updating filter options:', error);

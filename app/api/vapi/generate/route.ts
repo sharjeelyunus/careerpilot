@@ -54,7 +54,7 @@ export async function POST(request: Request) {
       id: interviewDoc.id,
       ...interview,
       completed: false,
-      feedback: null
+      feedbacks: null,
     });
 
     return Response.json(

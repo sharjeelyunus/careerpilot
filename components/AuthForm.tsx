@@ -56,7 +56,10 @@ const AuthForm = ({ type }: { type: FormType }) => {
           auth,
           email,
           password
-        );
+        ).catch((error) => {
+          console.error('Firebase auth error:', error);
+          throw new Error(error.message || 'Failed to create account');
+        });
 
         const result = await signUp({
           uid: userCredentials.user.uid,
@@ -66,7 +69,7 @@ const AuthForm = ({ type }: { type: FormType }) => {
         });
 
         if (!result?.success) {
-          toast.error(result?.message);
+          toast.error(result?.message || 'Failed to create account');
           return;
         }
 
@@ -78,7 +81,10 @@ const AuthForm = ({ type }: { type: FormType }) => {
           auth,
           email,
           password
-        );
+        ).catch((error) => {
+          console.error('Firebase auth error:', error);
+          throw new Error(error.message || 'Failed to sign in');
+        });
 
         const idToken = await userCredentials.user.getIdToken();
 
@@ -87,7 +93,12 @@ const AuthForm = ({ type }: { type: FormType }) => {
           return;
         }
 
-        await signIn({ email, idToken });
+        const signInResult = await signIn({ email, idToken });
+        
+        if (!signInResult?.success) {
+          toast.error(signInResult?.message || 'Failed to sign in');
+          return;
+        }
 
         toast.success('Signed in successfully.');
         await mutate('current-user', undefined, { revalidate: true });
@@ -96,9 +107,10 @@ const AuthForm = ({ type }: { type: FormType }) => {
         await mutate('filter-options', undefined, { revalidate: true });
         router.push('/');
       }
-    } catch (error) {
-      console.error(error);
-      toast.error(`There was an error: ${error}`);
+    } catch (error: unknown) {
+      console.error('Auth error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -109,7 +121,17 @@ const AuthForm = ({ type }: { type: FormType }) => {
 
     try {
       const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
+      provider.setCustomParameters({
+        prompt: 'select_account'
+      });
+      
+      const result = await signInWithPopup(auth, provider).catch((error) => {
+        if (error.code === 'auth/popup-closed-by-user') {
+          throw new Error('Sign in was cancelled');
+        }
+        throw error;
+      });
+      
       const idToken = await result.user.getIdToken();
       const response = await signInWithGoogle({
         idToken,
@@ -118,18 +140,24 @@ const AuthForm = ({ type }: { type: FormType }) => {
         uid: result.user.uid,
         photoURL: result.user.photoURL,
       });
+      
       if (!response?.success) {
-        toast.error(response?.message);
+        toast.error(response?.message || 'Failed to sign in with Google');
         return;
       }
+      
       toast.success('Signed in with Google successfully.');
       await mutate('current-user', undefined, { revalidate: true });
       await mutate(['user-interviews'], undefined, { revalidate: true });
       await mutate(['latest-interviews'], undefined, { revalidate: true });
       await mutate('filter-options', undefined, { revalidate: true });
       router.push('/');
-    } catch (error) {
-      console.error('Error:', error);
+    } catch (error: unknown) {
+      console.error('Google sign in error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to sign in with Google';
+      if (errorMessage !== 'Sign in was cancelled') {
+        toast.error(errorMessage);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -160,6 +188,7 @@ const AuthForm = ({ type }: { type: FormType }) => {
                   name='name'
                   label='Name'
                   placeholder='Your Name'
+                  autoComplete='name'
                 />
               )}
               <FormField
@@ -168,6 +197,7 @@ const AuthForm = ({ type }: { type: FormType }) => {
                 label='Email'
                 placeholder='Your email address'
                 type='email'
+                autoComplete='email'
               />
               <FormField
                 control={form.control}
@@ -175,6 +205,7 @@ const AuthForm = ({ type }: { type: FormType }) => {
                 label='Password'
                 placeholder='Enter your password'
                 type='password'
+                autoComplete={isSignIn ? 'current-password' : 'new-password'}
               />
 
               <Button className='btn' type='submit'>
