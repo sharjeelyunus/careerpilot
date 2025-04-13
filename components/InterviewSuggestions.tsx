@@ -18,7 +18,7 @@ interface Suggestion {
   amount: number;
 }
 
-export function InterviewSuggestions() {
+export function InterviewSuggestions({ userId }: { userId: string }) {
   const router = useRouter();
   const { data: user } = useSWR('current-user', getCurrentUser);
   const [loadingInterviews, setLoadingInterviews] = React.useState<
@@ -30,7 +30,7 @@ export function InterviewSuggestions() {
     error,
     isLoading,
   } = useSWR(
-    user ? ['interview-suggestions', user.id] : null,
+    user ? ['interview-suggestions', userId] : null,
     async ([, userId]) => {
       if (!user) return null;
 
