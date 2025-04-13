@@ -48,7 +48,7 @@ export default function RootLayout({
     await signOut();
     await auth.signOut();
     await mutate(() => true, undefined, { revalidate: false });
-    redirect('/sign-in');
+    redirect('/');
   };
 
   return (
