@@ -16,14 +16,9 @@ import {
   PaginationPrevious,
 } from '@/components/ui/pagination';
 import { getCurrentUser } from '@/lib/actions/auth.action';
-import {
-  getInterviewByUserId,
-  getLatestInterviews,
-  getFilterOptions,
-} from '@/lib/actions/general.action';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import useSWR from 'swr';
 import Search from '@/components/Search';
 import {
@@ -36,18 +31,11 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useInterviewStore } from '@/lib/store/interviewStore';
 
 const ITEMS_PER_PAGE = 6;
 
 const HomePage = () => {
-  const [userInterviewsPage, setUserInterviewsPage] = useState(1);
-  const [latestInterviewsPage, setLatestInterviewsPage] = useState(1);
-  const [filters, setFilters] = useState({
-    type: [] as string[],
-    techstack: [] as string[],
-    level: [] as string[],
-  });
-
   const { data: user, isLoading: isUserLoading } = useSWR(
     'current-user',
     getCurrentUser,
@@ -57,81 +45,49 @@ const HomePage = () => {
     }
   );
 
-  const { data: filterOptions } = useSWR('filter-options', getFilterOptions, {
-    revalidateOnFocus: false,
-    dedupingInterval: 5 * 60 * 1000,
-  });
+  // Get state and actions from the Zustand store
+  const {
+    userInterviews,
+    latestInterviews,
+    filterOptions,
+    filters,
+    userInterviewsPage,
+    latestInterviewsPage,
+    totalUserInterviews,
+    totalLatestInterviews,
+    isLoadingUserInterviews,
+    isLoadingLatestInterviews,
+    setUserInterviewsPage,
+    setLatestInterviewsPage,
+    fetchUserInterviews,
+    fetchLatestInterviews,
+    fetchFilterOptions,
+    handleFilterChange,
+    removeFilter,
+  } = useInterviewStore();
 
-  const { data: userInterviewsData, isLoading: isUserInterviewsLoading } =
-    useSWR(
-      !isUserLoading
-        ? user?.id
-          ? ['interviews-by-user', user.id, userInterviewsPage, filters]
-          : null
-        : null,
-      () =>
-        getInterviewByUserId(
-          user?.id ?? '',
-          userInterviewsPage,
-          ITEMS_PER_PAGE,
-          '',
-          filters
-        ),
-      {
-        revalidateOnFocus: false,
-        dedupingInterval: 30000,
-      }
-    );
+  // Fetch data when user or pagination changes
+  useEffect(() => {
+    if (user?.id) {
+      fetchUserInterviews(user.id, userInterviewsPage, ITEMS_PER_PAGE);
+      fetchLatestInterviews(user.id, latestInterviewsPage, ITEMS_PER_PAGE);
+      fetchFilterOptions();
+    }
+  }, [
+    user?.id,
+    userInterviewsPage,
+    latestInterviewsPage,
+    filters,
+    fetchUserInterviews,
+    fetchLatestInterviews,
+    fetchFilterOptions,
+  ]);
 
-  const { data: latestInterviewsData, isLoading: isLatestInterviewsLoading } =
-    useSWR(
-      !isUserLoading
-        ? ['latest-interviews', latestInterviewsPage, user?.id, filters]
-        : null,
-      () =>
-        getLatestInterviews({
-          userId: user?.id,
-          page: latestInterviewsPage,
-          limit: ITEMS_PER_PAGE,
-          filters,
-        }),
-      {
-        revalidateOnFocus: false,
-        dedupingInterval: 30000,
-      }
-    );
+  const hasPastInterviews = userInterviews.length > 0;
+  const hasUpcomingInterviews = latestInterviews.length > 0;
 
-  const hasPastInterviews = (userInterviewsData?.interviews ?? []).length > 0;
-  const hasUpcomingInterviews =
-    (latestInterviewsData?.interviews ?? []).length > 0;
-
-  const totalUserPages = Math.ceil(
-    (userInterviewsData?.total ?? 0) / ITEMS_PER_PAGE
-  );
-  const totalLatestPages = Math.ceil(
-    (latestInterviewsData?.total ?? 0) / ITEMS_PER_PAGE
-  );
-
-  const handleFilterChange = (key: keyof typeof filters, value: string) => {
-    setFilters((prev) => {
-      const currentValues = prev[key];
-      const newValues = currentValues.includes(value)
-        ? currentValues.filter((v) => v !== value)
-        : [...currentValues, value];
-      return { ...prev, [key]: newValues };
-    });
-    setUserInterviewsPage(1);
-    setLatestInterviewsPage(1);
-  };
-
-  const removeFilter = (key: keyof typeof filters, value: string) => {
-    setFilters((prev) => ({
-      ...prev,
-      [key]: prev[key].filter((v) => v !== value),
-    }));
-    setUserInterviewsPage(1);
-    setLatestInterviewsPage(1);
-  };
+  const totalUserPages = Math.ceil(totalUserInterviews / ITEMS_PER_PAGE);
+  const totalLatestPages = Math.ceil(totalLatestInterviews / ITEMS_PER_PAGE);
 
   if (isUserLoading) {
     return (
@@ -195,7 +151,7 @@ const HomePage = () => {
               <div>
                 <p className='text-sm text-light-100/70'>Your Interviews</p>
                 <p className='text-xl font-bold'>
-                  {userInterviewsData?.total || 0}
+                  {totalUserInterviews}
                 </p>
               </div>
             </div>
@@ -208,7 +164,7 @@ const HomePage = () => {
                   Available Interviews
                 </p>
                 <p className='text-xl font-bold'>
-                  {latestInterviewsData?.total || 0}
+                  {totalLatestInterviews}
                 </p>
               </div>
             </div>
@@ -225,7 +181,7 @@ const HomePage = () => {
                       style={{
                         width: `${Math.min(
                           100,
-                          ((userInterviewsData?.total || 0) / 10) * 100
+                          (totalUserInterviews / 10) * 100
                         )}%`,
                         transition: 'width 0.5s ease-in-out',
                       }}
@@ -234,7 +190,7 @@ const HomePage = () => {
                   <span className='text-sm font-medium'>
                     {Math.min(
                       100,
-                      Math.round(((userInterviewsData?.total || 0) / 10) * 100)
+                      Math.round((totalUserInterviews / 10) * 100)
                     )}
                     %
                   </span>
@@ -253,9 +209,7 @@ const HomePage = () => {
         transition={{ duration: 0.5, delay: 0.1 }}
       >
         <Search
-          filterOptions={
-            filterOptions ?? { type: [], techstack: [], level: [] }
-          }
+          filterOptions={filterOptions}
           onSearchChange={() => {}}
           onFilterChange={handleFilterChange}
           onRemoveFilter={removeFilter}
@@ -276,7 +230,7 @@ const HomePage = () => {
       )}
 
       {/* Your Interviews Section */}
-      {isUserInterviewsLoading ? (
+      {isLoadingUserInterviews ? (
         <div className='flex justify-center items-center min-h-[400px]'>
           <SpinnerLoader />
         </div>
@@ -301,7 +255,7 @@ const HomePage = () => {
 
           <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
             {hasPastInterviews ? (
-              userInterviewsData?.interviews.map((interview, index) => (
+              userInterviews.map((interview, index) => (
                 <motion.div
                   key={interview.id}
                   className='transform transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary-200/5'
@@ -339,7 +293,7 @@ const HomePage = () => {
                   <PaginationItem>
                     <PaginationPrevious
                       onClick={() =>
-                        setUserInterviewsPage((p) => Math.max(1, p - 1))
+                        setUserInterviewsPage(Math.max(1, userInterviewsPage - 1))
                       }
                       className={cn(
                         'transition-opacity',
@@ -364,8 +318,8 @@ const HomePage = () => {
                   <PaginationItem>
                     <PaginationNext
                       onClick={() =>
-                        setUserInterviewsPage((p) =>
-                          Math.min(totalUserPages, p + 1)
+                        setUserInterviewsPage(
+                          Math.min(totalUserPages, userInterviewsPage + 1)
                         )
                       }
                       className={cn(
@@ -383,7 +337,7 @@ const HomePage = () => {
       )}
 
       {/* Available Interviews Section */}
-      {isLatestInterviewsLoading ? (
+      {isLoadingLatestInterviews ? (
         <div className='flex justify-center items-center min-h-[400px]'>
           <SpinnerLoader />
         </div>
@@ -408,7 +362,7 @@ const HomePage = () => {
 
           <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
             {hasUpcomingInterviews ? (
-              latestInterviewsData?.interviews.map((interview, index) => (
+              latestInterviews.map((interview, index) => (
                 <motion.div
                   key={interview.id}
                   className='transform transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary-200/5'
@@ -452,7 +406,7 @@ const HomePage = () => {
                   <PaginationItem>
                     <PaginationPrevious
                       onClick={() =>
-                        setLatestInterviewsPage((p) => Math.max(1, p - 1))
+                        setLatestInterviewsPage(Math.max(1, latestInterviewsPage - 1))
                       }
                       className={cn(
                         'transition-opacity',
@@ -478,8 +432,8 @@ const HomePage = () => {
                   <PaginationItem>
                     <PaginationNext
                       onClick={() =>
-                        setLatestInterviewsPage((p) =>
-                          Math.min(totalLatestPages, p + 1)
+                        setLatestInterviewsPage(
+                          Math.min(totalLatestPages, latestInterviewsPage + 1)
                         )
                       }
                       className={cn(

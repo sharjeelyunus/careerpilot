@@ -1,26 +1,37 @@
 'use client';
 
+import React, { useEffect } from 'react';
+import { useParams, redirect } from 'next/navigation';
+import { useInterviewStore } from '@/lib/store/interviewStore';
 import DisplayTechIcons from '@/components/DisplayTechIcons';
 import { getCurrentUser } from '@/lib/actions/auth.action';
 import { getInterviewById } from '@/lib/actions/general.action';
-import { redirect, useParams } from 'next/navigation';
-import React from 'react';
 import useSWR from 'swr';
 import SpinnerLoader from '@/components/ui/loader';
 import Agent from '@/components/Agent';
 
-const Page = () => {
+export default function InterviewPage() {
   const params = useParams();
   const id = params?.id as string;
+  
+  const { fetchUserInterviews } = useInterviewStore();
+
   const { data: user } = useSWR('current-user', getCurrentUser);
   const { data: interview, isLoading: isInterviewLoading } = useSWR(
     id ? ['interview', id] : null,
     () => getInterviewById(id)
   );
 
+  useEffect(() => {
+    if (user?.id) {
+      fetchUserInterviews(user.id, 1, 10);
+    }
+  }, [fetchUserInterviews, user?.id]);
+
   if (isInterviewLoading) return <SpinnerLoader />;
 
   if (!interview) redirect('/');
+
   return (
     <>
       <div className='flex flex-row gap-4 justify-between'>
@@ -42,6 +53,4 @@ const Page = () => {
       />
     </>
   );
-};
-
-export default Page;
+}
