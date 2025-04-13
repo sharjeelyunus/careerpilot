@@ -297,11 +297,6 @@ export async function updateUserProfile(params: User) {
   const userRef = db.collection('users').doc(id);
 
   await userRef.update(userData);
-
-  // Dispatch a custom event to notify that experience points have been updated
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('experience-updated'));
-  }
 }
 
 export async function getLeaderboard(): Promise<User[]> {

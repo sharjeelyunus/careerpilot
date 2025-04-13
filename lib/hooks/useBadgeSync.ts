@@ -23,7 +23,6 @@ export function useBadgeSync({
 
   useEffect(() => {
     if (!user || !userInterviews || hasSynced) return;
-
     // Only get newly earned badges that the user doesn't already have
     const existingBadgeIds = new Set(user.badges?.map((b) => b.id) || []);
     const newlyEarnedBadges = progress.badges
@@ -33,31 +32,25 @@ export function useBadgeSync({
         earnedAt: new Date().toISOString(),
       }));
 
-    // Only update if there are new badges
-    if (newlyEarnedBadges.length > 0) {
-      // Update XP and badges in a single transaction
-      xpService
-        .calculateAndUpdateXP(
-          user.id,
-          userInterviews,
-          [...(user.badges || []), ...newlyEarnedBadges] as Badge[],
-          achievements,
-          streak
-        )
-        .then(() => {
-          // Batch the mutations together
-          Promise.all([
-            mutate('current-user'),
-            mutate('leaderboard'),
-            mutate(['user-by-id', user.id]),
-            mutate(['interviews-by-user', user.id]),
-          ]).then(() => {
-            window.dispatchEvent(new CustomEvent('experience-updated'));
-            setHasSynced(true);
-          });
+    // Update XP and badges in a single transaction
+    xpService
+      .calculateAndUpdateXP(
+        user.id,
+        userInterviews,
+        [...(user.badges || []), ...newlyEarnedBadges] as Badge[],
+        achievements,
+        streak
+      )
+      .then(() => {
+        // Batch the mutations together
+        Promise.all([
+          mutate('current-user'),
+          mutate('leaderboard'),
+          mutate(['user-by-id', user.id]),
+          mutate(['interviews-by-user', user.id]),
+        ]).then(() => {
+          setHasSynced(true);
         });
-    } else {
-      setHasSynced(true);
-    }
+      });
   }, [user, userInterviews, progress, achievements, streak, hasSynced]);
 }
