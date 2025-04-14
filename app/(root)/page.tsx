@@ -118,7 +118,9 @@ const HomePage = () => {
         />
 
         {/* Quick Actions Section */}
-        <QuickActionsSection onStartInterview={() => setShowInterviewForm(true)} />
+        <QuickActionsSection
+          onStartInterview={() => setShowInterviewForm(true)}
+        />
 
         {/* Search and Filters */}
         <SearchSection
@@ -132,40 +134,44 @@ const HomePage = () => {
         {user.id && <InterviewSuggestionsSection userId={user.id} />}
 
         {/* Your Interviews Section */}
-        <InterviewsSection
-          title="Your Interviews"
-          subtitle="Track your progress and improvement"
-          icon={Calendar}
-          isLoading={isLoadingUserInterviews}
-          interviews={userInterviews}
-          currentPage={userInterviewsPage}
-          totalPages={totalUserPages}
-          onPageChange={setUserInterviewsPage}
-          onStartInterview={() => setShowInterviewForm(true)}
-          emptyStateTitle="You haven't taken any interviews yet"
-          emptyStateDescription="Start your interview preparation journey by taking your first practice interview. Our AI-powered platform will help you improve your skills."
-          emptyStateActionText="Start Your First Interview"
-          delay={0.2}
-          userId={user?.id}
-        />
+        {user.id && (
+          <InterviewsSection
+            title='Your Interviews'
+            subtitle='Track your progress and improvement'
+            icon={Calendar}
+            isLoading={isLoadingUserInterviews}
+            interviews={userInterviews}
+            currentPage={userInterviewsPage}
+            totalPages={totalUserPages}
+            onPageChange={setUserInterviewsPage}
+            onStartInterview={() => setShowInterviewForm(true)}
+            emptyStateTitle="You haven't taken any interviews yet"
+            emptyStateDescription='Start your interview preparation journey by taking your first practice interview. Our AI-powered platform will help you improve your skills.'
+            emptyStateActionText='Start Your First Interview'
+            delay={0.2}
+            userId={user.id}
+          />
+        )}
 
         {/* Available Interviews Section */}
-        <InterviewsSection
-          title="Available Interviews"
-          subtitle="Practice with real scenarios"
-          icon={Sparkles}
-          isLoading={isLoadingLatestInterviews}
-          interviews={latestInterviews}
-          currentPage={latestInterviewsPage}
-          totalPages={totalLatestPages}
-          onPageChange={setLatestInterviewsPage}
-          userId={user?.id}
-          emptyStateTitle="No interviews available at the moment"
-          emptyStateDescription="We're constantly adding new interview scenarios. Check back later for new opportunities or browse our full interview library."
-          emptyStateActionText="Browse All Interviews"
-          emptyStateActionHref="/interview"
-          delay={0.3}
-        />
+        {user.id && (
+          <InterviewsSection
+            title='Available Interviews'
+            subtitle='Practice with real scenarios'
+            icon={Sparkles}
+            isLoading={isLoadingLatestInterviews}
+            interviews={latestInterviews}
+            currentPage={latestInterviewsPage}
+            totalPages={totalLatestPages}
+            onPageChange={setLatestInterviewsPage}
+            userId={user.id}
+            emptyStateTitle='No interviews available at the moment'
+            emptyStateDescription="We're constantly adding new interview scenarios. Check back later for new opportunities or browse our full interview library."
+            emptyStateActionText='Browse All Interviews'
+            emptyStateActionHref='/interview'
+            delay={0.3}
+          />
+        )}
       </div>
 
       {/* Floating Buttons */}

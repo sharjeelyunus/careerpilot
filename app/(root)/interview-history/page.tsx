@@ -76,11 +76,12 @@ const InterviewHistoryPage = () => {
                 <MessageSquare className='w-6 h-6 text-primary-200' />
               </div>
               <h1 className='text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary-200 via-light-100 to-primary-200 bg-clip-text text-transparent'>
-                Feedback History
+                Interview History
               </h1>
             </div>
             <p className='text-lg text-light-100/90'>
-              Review your interview feedback and track your improvement over time.
+              Review your interview feedback and track your improvement over
+              time.
             </p>
           </div>
           {!isLoadingCompletedInterviews && (
@@ -89,7 +90,7 @@ const InterviewHistoryPage = () => {
                 <Calendar className='w-5 h-5 text-primary-200' />
                 <div>
                   <h3 className='font-medium text-light-100'>
-                    Total Feedback Reviews
+                    Total Interviews
                   </h3>
                   <p className='text-2xl font-bold text-primary-200'>
                     {totalCompletedInterviews}
@@ -101,7 +102,7 @@ const InterviewHistoryPage = () => {
         </div>
       </motion.section>
 
-      {/* Feedback History Section */}
+      {/* Interview History Section */}
       {isLoadingCompletedInterviews ? (
         <div className='flex justify-center items-center min-h-[400px]'>
           <SpinnerLoader />
@@ -142,9 +143,8 @@ const InterviewHistoryPage = () => {
                     <FeedbackCard
                       id={interview.id}
                       date={new Date(interview.createdAt).toLocaleDateString()}
-                      duration="30 min"
                       role={interview.role}
-                      company={interview.type}
+                      type={interview.type}
                       overallScore={latestFeedback.totalScore}
                       strengths={latestFeedback.strengths}
                       areasForImprovement={latestFeedback.areasForImprovement}
@@ -167,7 +167,8 @@ const InterviewHistoryPage = () => {
                   You haven&apos;t received any feedback yet
                 </p>
                 <p className='text-sm text-light-100/50 mb-6 text-center max-w-md'>
-                  Complete your first interview to receive detailed feedback and insights to help you improve your skills.
+                  Complete your first interview to receive detailed feedback and
+                  insights to help you improve your skills.
                 </p>
               </motion.div>
             )}
