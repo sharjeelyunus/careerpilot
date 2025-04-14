@@ -4,9 +4,9 @@ import React, { useEffect } from 'react';
 import { useInterviewStore } from '@/lib/store/interviewStore';
 import { getCurrentUser } from '@/lib/actions/auth.action';
 import useSWR from 'swr';
-import InterviewCard from '@/components/InterviewCard';
+import FeedbackCard from '@/components/FeedbackCard';
 import SpinnerLoader from '@/components/ui/loader';
-import { Calendar, Clock } from 'lucide-react';
+import { Calendar, MessageSquare } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const InterviewHistoryPage = () => {
@@ -47,7 +47,7 @@ const InterviewHistoryPage = () => {
     return (
       <div className='flex flex-col items-center justify-center min-h-[400px]'>
         <h1 className='text-2xl font-bold mb-4'>
-          Please log in to view your interview history
+          Please log in to view your feedback history
         </h1>
         <p className='text-light-100/70'>
           You need to be logged in to access this page.
@@ -73,15 +73,14 @@ const InterviewHistoryPage = () => {
           <div className='flex flex-col gap-4 max-w-2xl'>
             <div className='flex items-center gap-3'>
               <div className='w-12 h-12 bg-primary-200/10 rounded-full flex items-center justify-center'>
-                <Clock className='w-6 h-6 text-primary-200' />
+                <MessageSquare className='w-6 h-6 text-primary-200' />
               </div>
               <h1 className='text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary-200 via-light-100 to-primary-200 bg-clip-text text-transparent'>
-                Interview History
+                Feedback History
               </h1>
             </div>
             <p className='text-lg text-light-100/90'>
-              Review your completed interviews and track your progress over
-              time.
+              Review your interview feedback and track your improvement over time.
             </p>
           </div>
           {!isLoadingCompletedInterviews && (
@@ -90,7 +89,7 @@ const InterviewHistoryPage = () => {
                 <Calendar className='w-5 h-5 text-primary-200' />
                 <div>
                   <h3 className='font-medium text-light-100'>
-                    Completed Interviews
+                    Total Feedback Reviews
                   </h3>
                   <p className='text-2xl font-bold text-primary-200'>
                     {totalCompletedInterviews}
@@ -102,7 +101,7 @@ const InterviewHistoryPage = () => {
         </div>
       </motion.section>
 
-      {/* Interview History Section */}
+      {/* Feedback History Section */}
       {isLoadingCompletedInterviews ? (
         <div className='flex justify-center items-center min-h-[400px]'>
           <SpinnerLoader />
@@ -117,28 +116,43 @@ const InterviewHistoryPage = () => {
           <div className='flex items-center justify-between mb-8'>
             <div>
               <h2 className='text-3xl font-bold flex items-center gap-2'>
-                <Calendar className='w-6 h-6 text-primary-200' />
-                Your Completed Interviews
+                <MessageSquare className='w-6 h-6 text-primary-200' />
+                Your Interview Feedback
               </h2>
               <p className='text-light-100/70 mt-1'>
-                Review and analyze your performance
+                Click on a card to view detailed feedback
               </p>
             </div>
           </div>
 
-          <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
+          <div className='grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 auto-rows-fr'>
             {completedInterviews.length > 0 ? (
-              completedInterviews.map((interview, index) => (
-                <motion.div
-                  key={interview.id}
-                  className='transform transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary-200/5'
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.1 }}
-                >
-                  <InterviewCard {...interview} />
-                </motion.div>
-              ))
+              completedInterviews.map((interview, index) => {
+                const latestFeedback = interview.feedbacks?.[0];
+                if (!latestFeedback) return null;
+
+                return (
+                  <motion.div
+                    key={interview.id}
+                    className='h-full'
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.1 }}
+                  >
+                    <FeedbackCard
+                      id={interview.id}
+                      date={new Date(interview.createdAt).toLocaleDateString()}
+                      duration="30 min"
+                      role={interview.role}
+                      company={interview.type}
+                      overallScore={latestFeedback.totalScore}
+                      strengths={latestFeedback.strengths}
+                      areasForImprovement={latestFeedback.areasForImprovement}
+                      keyTakeaways={[latestFeedback.finalAssessment]}
+                    />
+                  </motion.div>
+                );
+              })
             ) : (
               <motion.div
                 className='col-span-full flex flex-col items-center justify-center p-12 bg-dark-200/50 rounded-2xl border border-primary-200/10'
@@ -147,14 +161,13 @@ const InterviewHistoryPage = () => {
                 transition={{ duration: 0.5 }}
               >
                 <div className='w-20 h-20 bg-primary-200/10 rounded-full flex items-center justify-center mb-6'>
-                  <Clock className='w-10 h-10 text-primary-200' />
+                  <MessageSquare className='w-10 h-10 text-primary-200' />
                 </div>
                 <p className='text-lg text-light-100/70 mb-4'>
-                  You haven&apos;t completed any interviews yet
+                  You haven&apos;t received any feedback yet
                 </p>
                 <p className='text-sm text-light-100/50 mb-6 text-center max-w-md'>
-                  Complete your first interview to start tracking your progress.
-                  Our AI-powered platform will help you improve your skills.
+                  Complete your first interview to receive detailed feedback and insights to help you improve your skills.
                 </p>
               </motion.div>
             )}
