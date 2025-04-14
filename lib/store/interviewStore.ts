@@ -1,5 +1,10 @@
 import { create } from 'zustand';
-import { getInterviewByUserId, getLatestInterviews, getFilterOptions } from '@/lib/actions/general.action';
+import {
+  getInterviewByUserId,
+  getLatestInterviews,
+  getFilterOptions,
+  getCompletedInterviewsByUserId,
+} from '@/lib/actions/general.action';
 import { Interview } from '@/types';
 
 // Define types for our store
@@ -18,22 +23,36 @@ export interface FilterOptions {
 export interface InterviewState {
   // State
   userInterviews: Interview[];
+  completedInterviews: Interview[];
   latestInterviews: Interview[];
   filterOptions: FilterOptions;
   filters: InterviewFilters;
   userInterviewsPage: number;
+  completedInterviewsPage: number;
   latestInterviewsPage: number;
   totalUserInterviews: number;
+  totalCompletedInterviews: number;
   totalLatestInterviews: number;
   isLoadingUserInterviews: boolean;
+  isLoadingCompletedInterviews: boolean;
   isLoadingLatestInterviews: boolean;
-  
+
   // Actions
   setFilters: (filters: InterviewFilters) => void;
   setUserInterviewsPage: (page: number) => void;
+  setCompletedInterviewsPage: (page: number) => void;
   setLatestInterviewsPage: (page: number) => void;
-  fetchUserInterviews: (userId: string, page: number, limit: number) => Promise<void>;
-  fetchLatestInterviews: (userId: string | undefined, page: number, limit: number) => Promise<void>;
+  fetchUserInterviews: (
+    userId: string,
+    page: number,
+    limit: number
+  ) => Promise<void>;
+  fetchCompletedInterviews: (userId: string) => Promise<void>;
+  fetchLatestInterviews: (
+    userId: string | undefined,
+    page: number,
+    limit: number
+  ) => Promise<void>;
   fetchFilterOptions: () => Promise<void>;
   handleFilterChange: (key: keyof InterviewFilters, value: string) => void;
   removeFilter: (key: keyof InterviewFilters, value: string) => void;
@@ -43,6 +62,7 @@ export interface InterviewState {
 export const useInterviewStore = create<InterviewState>((set, get) => ({
   // Initial state
   userInterviews: [],
+  completedInterviews: [],
   latestInterviews: [],
   filterOptions: {
     type: [],
@@ -55,19 +75,24 @@ export const useInterviewStore = create<InterviewState>((set, get) => ({
     level: [],
   },
   userInterviewsPage: 1,
+  completedInterviewsPage: 1,
   latestInterviewsPage: 1,
   totalUserInterviews: 0,
+  totalCompletedInterviews: 0,
   totalLatestInterviews: 0,
   isLoadingUserInterviews: false,
+  isLoadingCompletedInterviews: false,
   isLoadingLatestInterviews: false,
-  
+
   // Actions
   setFilters: (filters) => set({ filters }),
-  
+
   setUserInterviewsPage: (page) => set({ userInterviewsPage: page }),
-  
+
+  setCompletedInterviewsPage: (page) => set({ completedInterviewsPage: page }),
+
   setLatestInterviewsPage: (page) => set({ latestInterviewsPage: page }),
-  
+
   fetchUserInterviews: async (userId, page, limit) => {
     set({ isLoadingUserInterviews: true });
     try {
@@ -88,7 +113,22 @@ export const useInterviewStore = create<InterviewState>((set, get) => ({
       set({ isLoadingUserInterviews: false });
     }
   },
-  
+
+  fetchCompletedInterviews: async (userId) => {
+    set({ isLoadingCompletedInterviews: true });
+    try {
+      const result = await getCompletedInterviewsByUserId(userId);
+      set({
+        completedInterviews: result.interviews,
+        totalCompletedInterviews: result.total,
+        isLoadingCompletedInterviews: false,
+      });
+    } catch (error) {
+      console.error('Error fetching completed interviews:', error);
+      set({ isLoadingCompletedInterviews: false });
+    }
+  },
+
   fetchLatestInterviews: async (userId, page, limit) => {
     set({ isLoadingLatestInterviews: true });
     try {
@@ -108,7 +148,7 @@ export const useInterviewStore = create<InterviewState>((set, get) => ({
       set({ isLoadingLatestInterviews: false });
     }
   },
-  
+
   fetchFilterOptions: async () => {
     try {
       const options = await getFilterOptions();
@@ -117,21 +157,22 @@ export const useInterviewStore = create<InterviewState>((set, get) => ({
       console.error('Error fetching filter options:', error);
     }
   },
-  
+
   handleFilterChange: (key, value) => {
     const currentFilters = get().filters;
     const currentValues = currentFilters[key];
     const newValues = currentValues.includes(value)
       ? currentValues.filter((v) => v !== value)
       : [...currentValues, value];
-    
+
     set({
       filters: { ...currentFilters, [key]: newValues },
       userInterviewsPage: 1,
+      completedInterviewsPage: 1,
       latestInterviewsPage: 1,
     });
   },
-  
+
   removeFilter: (key, value) => {
     const currentFilters = get().filters;
     set({
@@ -140,7 +181,8 @@ export const useInterviewStore = create<InterviewState>((set, get) => ({
         [key]: currentFilters[key].filter((v) => v !== value),
       },
       userInterviewsPage: 1,
+      completedInterviewsPage: 1,
       latestInterviewsPage: 1,
     });
   },
-})); 
+}));

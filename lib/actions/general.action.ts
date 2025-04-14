@@ -417,3 +417,77 @@ export async function getFilterOptions(): Promise<FilterOptions> {
     throw new Error('Failed to fetch filter options');
   }
 }
+
+export async function getCompletedInterviewsByUserId(
+  userId: string
+): Promise<{ interviews: Interview[]; total: number }> {
+  try {
+    if (!userId) {
+      throw new Error('User ID is required');
+    }
+
+    const cacheKey = `completed-interviews-${userId}`;
+    const cachedData = getCachedData<{
+      interviews: Interview[];
+      total: number;
+    }>(cacheKey);
+    if (cachedData) return cachedData;
+
+    // First, get all feedbacks for the user
+    const feedbackSnapshot = await db
+      .collection('feedback')
+      .where('userId', '==', userId)
+      .get();
+
+    // Create a map of interview IDs that have feedback
+    const completedInterviewIds = new Set<string>();
+    feedbackSnapshot.forEach((doc) => {
+      const data = doc.data();
+      completedInterviewIds.add(data.interviewId);
+    });
+
+    // Convert Set to Array for the query
+    const completedInterviewIdsArray = Array.from(completedInterviewIds);
+
+    // If no completed interviews, return empty result
+    if (completedInterviewIdsArray.length === 0) {
+      return { interviews: [], total: 0 };
+    }
+
+    const interviews: Interview[] = [];
+
+    completedInterviewIdsArray.map(async (id) => {
+      // Get the interview
+      const interview = await db.collection('interviews').doc(id).get();
+      interviews.push({
+        id: interview.id,
+        ...interview.data(),
+      } as Interview);
+    });
+
+    // get feedbacks for each interview
+    const feedbacks = await db
+      .collection('feedback')
+      .where('interviewId', 'in', completedInterviewIdsArray)
+      .get();
+
+    feedbacks.forEach((doc) => {
+      const data = doc.data();
+      const feedback = { id: doc.id, ...data } as Feedback;
+      const interview = interviews.find(
+        (interview) => interview.id === feedback.interviewId
+      );
+      if (interview) {
+        interview.feedbacks = [feedback];
+      }
+    });
+
+    const result = { interviews, total: interviews.length };
+
+    setCachedData(cacheKey, result);
+    return result;
+  } catch (error) {
+    console.error('Error fetching completed interviews:', error);
+    throw error;
+  }
+}
