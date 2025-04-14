@@ -146,6 +146,7 @@ const HomePage = () => {
           emptyStateDescription="Start your interview preparation journey by taking your first practice interview. Our AI-powered platform will help you improve your skills."
           emptyStateActionText="Start Your First Interview"
           delay={0.2}
+          userId={user?.id}
         />
 
         {/* Available Interviews Section */}
