@@ -41,6 +41,12 @@ const Agent = ({
   const [messages, setMessages] = useState<SavedMessage[]>([]);
 
   useEffect(() => {
+    // Check if Vapi token is available
+    if (!process.env.NEXT_PUBLIC_VAPI_WEB_TOKEN) {
+      console.error('Vapi token is not available');
+      return;
+    }
+
     const onCallStart = () => setCallStatus(CallStatus.ACTIVE);
     const onCallEnd = () => setCallStatus(CallStatus.INACTIVE);
 
@@ -110,26 +116,31 @@ const Agent = ({
   const handleCall = async () => {
     setCallStatus(CallStatus.CONNECTING);
 
-    if (type === 'generate') {
-      await vapi.start(process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!, {
-        variableValues: {
-          username: user?.name || '',
-          userid: user?.id || '',
-        },
-      });
-    } else {
-      let formattedQuestions = '';
-      if (questions) {
-        formattedQuestions = questions
-          .map((questions) => `- ${questions}`)
-          .join('\n');
-      }
+    try {
+      if (type === 'generate') {
+        await vapi.start(process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!, {
+          variableValues: {
+            username: user?.name || '',
+            userid: user?.id || '',
+          }
+        });
+      } else {
+        let formattedQuestions = '';
+        if (questions) {
+          formattedQuestions = questions
+            .map((questions) => `- ${questions}`)
+            .join('\n');
+        }
 
-      await vapi.start(interviewer, {
-        variableValues: {
-          questions: formattedQuestions,
-        },
-      });
+        await vapi.start(interviewer, {
+          variableValues: {
+            questions: formattedQuestions,
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error starting call:', error);
+      setCallStatus(CallStatus.INACTIVE);
     }
   };
 
