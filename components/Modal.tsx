@@ -1,5 +1,10 @@
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogTrigger,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { useState, useEffect } from 'react';
 
 interface ModalProps {
@@ -10,16 +15,22 @@ interface ModalProps {
   open?: boolean;
 }
 
-export function Modal({ title, children, className, onClose, open: controlledOpen }: ModalProps) {
+export function Modal({
+  title,
+  children,
+  className,
+  onClose,
+  open: controlledOpen,
+}: ModalProps) {
   const [open, setOpen] = useState(false);
-  
+
   // Handle controlled open state
   useEffect(() => {
     if (controlledOpen !== undefined) {
       setOpen(controlledOpen);
     }
   }, [controlledOpen]);
-  
+
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen);
     if (!newOpen && onClose) {
@@ -35,6 +46,7 @@ export function Modal({ title, children, className, onClose, open: controlledOpe
         </Button>
       </DialogTrigger>
       <DialogContent className='sm:max-w-[500px] max-h-[90vh] overflow-auto'>
+        <DialogTitle></DialogTitle>
         {children}
       </DialogContent>
     </Dialog>

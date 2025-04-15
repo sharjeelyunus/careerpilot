@@ -44,23 +44,6 @@ const nextConfig: NextConfig = {
       'react-icons',
     ],
   },
-  headers: async () => {
-    return [
-      {
-        source: '/:path*',
-        headers: [
-          {
-            key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https: wss: ws:; frame-src 'self' https://careerpilot-6799a.firebaseapp.com https://apis.google.com;"
-          },
-          {
-            key: 'Permissions-Policy',
-            value: "microphone=*, camera=*"
-          }
-        ],
-      },
-    ];
-  },
 };
 
 export default withAnalyzer(nextConfig);
