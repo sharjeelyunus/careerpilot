@@ -36,6 +36,7 @@ export interface InterviewState {
   isLoadingUserInterviews: boolean;
   isLoadingCompletedInterviews: boolean;
   isLoadingLatestInterviews: boolean;
+  lastCompletedInterviewsFetch: number;
 
   // Actions
   setFilters: (filters: InterviewFilters) => void;
@@ -47,7 +48,7 @@ export interface InterviewState {
     page: number,
     limit: number
   ) => Promise<void>;
-  fetchCompletedInterviews: (userId: string) => Promise<void>;
+  fetchCompletedInterviews: (userId: string, force?: boolean) => Promise<void>;
   fetchLatestInterviews: (
     userId: string | undefined,
     page: number,
@@ -83,6 +84,7 @@ export const useInterviewStore = create<InterviewState>((set, get) => ({
   isLoadingUserInterviews: false,
   isLoadingCompletedInterviews: false,
   isLoadingLatestInterviews: false,
+  lastCompletedInterviewsFetch: 0,
 
   // Actions
   setFilters: (filters) => set({ filters }),
@@ -114,7 +116,20 @@ export const useInterviewStore = create<InterviewState>((set, get) => ({
     }
   },
 
-  fetchCompletedInterviews: async (userId) => {
+  fetchCompletedInterviews: async (userId, force = false) => {
+    const state = get();
+    const now = Date.now();
+    const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+    // Return cached data if available and not forced refresh
+    if (
+      !force &&
+      state.completedInterviews.length > 0 &&
+      now - state.lastCompletedInterviewsFetch < CACHE_DURATION
+    ) {
+      return;
+    }
+
     set({ isLoadingCompletedInterviews: true });
     try {
       const result = await getCompletedInterviewsByUserId(userId);
@@ -122,6 +137,7 @@ export const useInterviewStore = create<InterviewState>((set, get) => ({
         completedInterviews: result.interviews,
         totalCompletedInterviews: result.total,
         isLoadingCompletedInterviews: false,
+        lastCompletedInterviewsFetch: now,
       });
     } catch (error) {
       console.error('Error fetching completed interviews:', error);

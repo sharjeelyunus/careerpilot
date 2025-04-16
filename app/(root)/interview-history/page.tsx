@@ -34,7 +34,8 @@ const InterviewHistoryPage = () => {
   // Fetch data when user changes
   useEffect(() => {
     if (user?.id) {
-      fetchCompletedInterviews(user.id);
+      // Force refresh completed interviews on the history page to ensure we have the latest data
+      fetchCompletedInterviews(user.id, true);
     }
   }, [user?.id, fetchCompletedInterviews]);
 

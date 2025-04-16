@@ -72,6 +72,7 @@ const HomePage = () => {
       fetchUserInterviews(user.id, userInterviewsPage, ITEMS_PER_PAGE);
       fetchLatestInterviews(user.id, latestInterviewsPage, ITEMS_PER_PAGE);
       fetchFilterOptions();
+      // Only fetch completed interviews if we don't have them or if they're stale
       fetchCompletedInterviews(user.id);
     }
   }, [
