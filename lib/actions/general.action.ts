@@ -303,6 +303,8 @@ export async function getLeaderboard(): Promise<User[]> {
   const leaderboard = await db
     .collection('users')
     .orderBy('experiencePoints', 'desc')
+    .where('experiencePoints', '>=', 100)
+    .limit(10)
     .get();
 
   return leaderboard.docs.map((doc) => ({
