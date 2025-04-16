@@ -8,6 +8,11 @@ import { getCurrentUser } from '@/lib/actions/auth.action';
 import React, { useEffect, useState } from 'react';
 import useSWR from 'swr';
 import { useInterviewStore } from '@/lib/store/interviewStore';
+import { useAnalyticsStore } from '@/lib/store/analytics.store';
+import { Calendar, Sparkles } from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import { motion } from 'framer-motion';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // Import the new components
 import WelcomeSection from '@/components/home/WelcomeSection';
@@ -16,7 +21,6 @@ import SearchSection from '@/components/home/SearchSection';
 import InterviewSuggestionsSection from '@/components/home/InterviewSuggestionsSection';
 import InterviewsSection from '@/components/home/InterviewsSection';
 import FloatingButtons from '@/components/home/FloatingButtons';
-import { Calendar, Sparkles } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 6;
 
@@ -29,6 +33,8 @@ const HomePage = () => {
       dedupingInterval: 30 * 60 * 1000,
     }
   );
+
+  const { fetchAnalytics, analyticsData, isLoading: isAnalyticsLoading } = useAnalyticsStore();
 
   const [showInterviewForm, setShowInterviewForm] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -60,6 +66,7 @@ const HomePage = () => {
       fetchUserInterviews(user.id, userInterviewsPage, ITEMS_PER_PAGE);
       fetchLatestInterviews(user.id, latestInterviewsPage, ITEMS_PER_PAGE);
       fetchFilterOptions();
+      fetchAnalytics(user.id);
     }
   }, [
     user?.id,
@@ -69,6 +76,7 @@ const HomePage = () => {
     fetchUserInterviews,
     fetchLatestInterviews,
     fetchFilterOptions,
+    fetchAnalytics,
   ]);
 
   // Add scroll event listener to show/hide scroll to top button
@@ -116,6 +124,113 @@ const HomePage = () => {
           progressPercentage={progressPercentage}
           hasPastInterviews={hasPastInterviews}
         />
+
+        {/* Analytics Overview */}
+        <div className='mb-8'>
+          <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+            {isAnalyticsLoading ? (
+              <>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <Card className='p-6 dark-gradient'>
+                    <Skeleton className='h-6 w-48 mb-2 bg-primary-200/10' />
+                    <Skeleton className='h-8 w-24 mb-2 bg-primary-200/10' />
+                    <Skeleton className='h-4 w-32 bg-primary-200/10' />
+                  </Card>
+                </motion.div>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.1 }}
+                >
+                  <Card className='p-6 dark-gradient'>
+                    <Skeleton className='h-6 w-48 mb-2 bg-primary-200/10' />
+                    <Skeleton className='h-8 w-24 mb-2 bg-primary-200/10' />
+                    <Skeleton className='h-4 w-32 bg-primary-200/10' />
+                  </Card>
+                </motion.div>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.2 }}
+                >
+                  <Card className='p-6 dark-gradient'>
+                    <Skeleton className='h-6 w-48 mb-2 bg-primary-200/10' />
+                    <Skeleton className='h-8 w-24 mb-2 bg-primary-200/10' />
+                    <Skeleton className='h-4 w-32 bg-primary-200/10' />
+                  </Card>
+                </motion.div>
+              </>
+            ) : (
+              <>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <Card className='p-6 dark-gradient'>
+                    <h3 className='text-lg font-semibold text-light-100 mb-2'>
+                      Total Completed Interviews
+                    </h3>
+                    <p className='text-3xl font-bold text-primary-200'>
+                      {analyticsData?.totalInterviews ?? 0}
+                    </p>
+                    <p className='text-sm text-light-100/70 mt-2'>
+                      {(analyticsData?.totalInterviews ?? 0) > 0
+                        ? 'Keep practicing!'
+                        : 'Start your first interview'}
+                    </p>
+                  </Card>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.1 }}
+                >
+                  <Card className='p-6 dark-gradient'>
+                    <h3 className='text-lg font-semibold text-light-100 mb-2'>
+                      Average Score
+                    </h3>
+                    <p className='text-3xl font-bold text-primary-200'>
+                      {analyticsData?.averageScore ?? 0}%
+                    </p>
+                    <p className='text-sm text-light-100/70 mt-2'>
+                      {(analyticsData?.averageScore ?? 0) > 80
+                        ? 'Excellent!'
+                        : (analyticsData?.averageScore ?? 0) > 60
+                        ? 'Good progress!'
+                        : 'Keep practicing!'}
+                    </p>
+                  </Card>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.2 }}
+                >
+                  <Card className='p-6 dark-gradient'>
+                    <h3 className='text-lg font-semibold text-light-100 mb-2'>
+                      Practice Streak
+                    </h3>
+                    <p className='text-3xl font-bold text-primary-200'>
+                      {analyticsData?.practiceStreak ?? 0} days
+                    </p>
+                    <p className='text-sm text-light-100/70 mt-2'>
+                      {(analyticsData?.practiceStreak ?? 0) > 5
+                        ? 'Amazing streak!'
+                        : 'Build your streak!'}
+                    </p>
+                  </Card>
+                </motion.div>
+              </>
+            )}
+          </div>
+        </div>
 
         {/* Quick Actions Section */}
         <QuickActionsSection

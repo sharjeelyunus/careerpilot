@@ -8,6 +8,8 @@ import FeedbackCard from '@/components/FeedbackCard';
 import SpinnerLoader from '@/components/ui/loader';
 import { Calendar, MessageSquare } from 'lucide-react';
 import { motion } from 'framer-motion';
+import ProgressTimeline from '@/components/analytics/ProgressTimeline';
+import { useAnalyticsStore } from '@/lib/store/analytics.store';
 
 const InterviewHistoryPage = () => {
   const { data: user, isLoading: isUserLoading } = useSWR(
@@ -18,6 +20,8 @@ const InterviewHistoryPage = () => {
       dedupingInterval: 30 * 60 * 1000,
     }
   );
+
+  const { fetchAnalytics, analyticsData } = useAnalyticsStore();
 
   // Get state and actions from the Zustand store
   const {
@@ -31,8 +35,9 @@ const InterviewHistoryPage = () => {
   useEffect(() => {
     if (user?.id) {
       fetchCompletedInterviews(user.id);
+      fetchAnalytics(user.id);
     }
-  }, [user?.id, fetchCompletedInterviews]);
+  }, [user?.id, fetchCompletedInterviews, fetchAnalytics]);
 
   if (isUserLoading) {
     return (
@@ -101,6 +106,22 @@ const InterviewHistoryPage = () => {
           )}
         </div>
       </motion.section>
+
+      {/* Progress Timeline Section */}
+      {analyticsData?.progressData && (
+        <motion.section
+          className='mb-12'
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+        >
+          <ProgressTimeline
+            progressData={analyticsData.progressData}
+            performanceData={analyticsData.performanceData}
+            skillData={analyticsData.skillData}
+          />
+        </motion.section>
+      )}
 
       {/* Interview History Section */}
       {isLoadingCompletedInterviews ? (
