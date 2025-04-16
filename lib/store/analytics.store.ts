@@ -2,13 +2,14 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { AnalyticsData } from '@/lib/services/analytics.service';
 import { fetchAnalyticsData } from '@/lib/services/analytics.service';
+import { Interview } from '@/types';
 
 interface AnalyticsStore {
   analyticsData: AnalyticsData | null;
   isLoading: boolean;
   error: string | null;
   lastUpdated: number | null;
-  fetchAnalytics: (userId: string, force?: boolean) => Promise<void>;
+  fetchAnalytics: (interviews: Interview[], force?: boolean) => Promise<void>;
   updateSpecificAnalytics: <K extends keyof AnalyticsData>(key: K, value: AnalyticsData[K]) => void;
 }
 
@@ -22,7 +23,7 @@ export const useAnalyticsStore = create<AnalyticsStore>()(
       error: null,
       lastUpdated: null,
 
-      fetchAnalytics: async (userId: string, force = false) => {
+      fetchAnalytics: async (interviews: Interview[], force = false) => {
         const { lastUpdated, analyticsData } = get();
         const now = Date.now();
 
@@ -38,7 +39,7 @@ export const useAnalyticsStore = create<AnalyticsStore>()(
 
         set({ isLoading: true, error: null });
         try {
-          const data = await fetchAnalyticsData(userId);
+          const data = await fetchAnalyticsData(interviews);
           set({ 
             analyticsData: data, 
             isLoading: false,

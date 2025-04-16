@@ -6,6 +6,7 @@ interface WelcomeSectionProps {
   userName: string;
   totalUserInterviews: number;
   totalLatestInterviews: number;
+  totalCompletedInterviews: number;
   progressPercentage: number;
   hasPastInterviews: boolean;
 }
@@ -14,6 +15,7 @@ const WelcomeSection = ({
   userName,
   totalUserInterviews,
   totalLatestInterviews,
+  totalCompletedInterviews,
   progressPercentage,
   hasPastInterviews,
 }: WelcomeSectionProps) => {
@@ -49,7 +51,7 @@ const WelcomeSection = ({
           </div>
           <p className='text-lg text-light-100/90'>
             {hasPastInterviews
-              ? `You've completed ${totalUserInterviews} interviews. Keep up the great work!`
+              ? `You've completed ${totalCompletedInterviews} interviews. Keep up the great work!`
               : 'Start your interview preparation journey with our AI-powered platform.'}
           </p>
 

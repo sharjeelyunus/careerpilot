@@ -31,13 +31,19 @@ const InterviewHistoryPage = () => {
     fetchCompletedInterviews,
   } = useInterviewStore();
 
-  // Fetch data when user or pagination changes
+  // Fetch data when user changes
   useEffect(() => {
     if (user?.id) {
       fetchCompletedInterviews(user.id);
-      fetchAnalytics(user.id);
     }
-  }, [user?.id, fetchCompletedInterviews, fetchAnalytics]);
+  }, [user?.id, fetchCompletedInterviews]);
+
+  // Separate effect for analytics to avoid circular dependency
+  useEffect(() => {
+    if (completedInterviews.length > 0) {
+      fetchAnalytics(completedInterviews);
+    }
+  }, [completedInterviews, fetchAnalytics]);
 
   if (isUserLoading) {
     return (

@@ -1,5 +1,4 @@
 import { Interview } from '@/types';
-import { useInterviewStore } from '@/lib/store/interviewStore';
 
 // Helper function to get ISO week number
 function getWeekNumber(date: Date): number {
@@ -63,23 +62,17 @@ export interface TechStackFrequencyItem {
 }
 
 export async function fetchAnalyticsData(
-  userId: string
+  interviews: Interview[]
 ): Promise<AnalyticsData> {
   try {
-    // Use the interview store to fetch completed interviews
-    const interviewStore = useInterviewStore.getState();
-    await interviewStore.fetchCompletedInterviews(userId);
-    
-    // Get the completed interviews from the store
-    const interviews = interviewStore.completedInterviews;
-    
     if (!interviews || interviews.length === 0) {
       return getEmptyAnalyticsData();
     }
+
     // All analytics calculations now use only completed interviews
     return calculateAnalyticsData(interviews);
   } catch (error) {
-    console.error('Error fetching analytics data:', error);
+    console.error('Error calculating analytics data:', error);
     return getEmptyAnalyticsData();
   }
 }
@@ -144,10 +137,7 @@ function calculatePracticeStreak(interviews: Interview[]): number {
     const feedbacksB = b.feedbacks && b.feedbacks[0] ? b.feedbacks[0] : null;
     const createdAtB = feedbacksB ? new Date(feedbacksB.createdAt) : null;
     const createdAt = feedbacks ? new Date(feedbacks.createdAt) : null;
-    return (
-      (createdAtB?.getTime() || 0) -
-      (createdAt?.getTime() || 0)
-    );
+    return (createdAtB?.getTime() || 0) - (createdAt?.getTime() || 0);
   });
 
   // Calculate streak

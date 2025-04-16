@@ -34,7 +34,11 @@ const HomePage = () => {
     }
   );
 
-  const { fetchAnalytics, analyticsData, isLoading: isAnalyticsLoading } = useAnalyticsStore();
+  const {
+    fetchAnalytics,
+    analyticsData,
+    isLoading: isAnalyticsLoading,
+  } = useAnalyticsStore();
 
   const [showInterviewForm, setShowInterviewForm] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -58,6 +62,8 @@ const HomePage = () => {
     fetchFilterOptions,
     handleFilterChange,
     removeFilter,
+    fetchCompletedInterviews,
+    completedInterviews,
   } = useInterviewStore();
 
   // Fetch data when user or pagination changes
@@ -66,7 +72,7 @@ const HomePage = () => {
       fetchUserInterviews(user.id, userInterviewsPage, ITEMS_PER_PAGE);
       fetchLatestInterviews(user.id, latestInterviewsPage, ITEMS_PER_PAGE);
       fetchFilterOptions();
-      fetchAnalytics(user.id);
+      fetchCompletedInterviews(user.id);
     }
   }, [
     user?.id,
@@ -76,8 +82,15 @@ const HomePage = () => {
     fetchUserInterviews,
     fetchLatestInterviews,
     fetchFilterOptions,
-    fetchAnalytics,
+    fetchCompletedInterviews,
   ]);
+
+  // Separate effect for analytics to avoid circular dependency
+  useEffect(() => {
+    if (completedInterviews.length > 0) {
+      fetchAnalytics(completedInterviews);
+    }
+  }, [completedInterviews, fetchAnalytics]);
 
   // Add scroll event listener to show/hide scroll to top button
   useEffect(() => {
@@ -94,10 +107,18 @@ const HomePage = () => {
   const totalUserPages = Math.ceil(totalUserInterviews / ITEMS_PER_PAGE);
   const totalLatestPages = Math.ceil(totalLatestInterviews / ITEMS_PER_PAGE);
 
-  // Calculate user's progress percentage
-  const progressPercentage = Math.min(
-    100,
-    Math.round((totalUserInterviews / 10) * 100)
+  // Calculate user's progress percentage towards the next badge
+  const calculateProgressPercentage = (
+    completedCount: number,
+    totalInterviews: number
+  ): number => {
+    const progress = (completedCount / totalInterviews) * 100;
+    return Math.min(100, Math.round(progress));
+  };
+
+  const progressPercentage = calculateProgressPercentage(
+    analyticsData?.totalInterviews ?? 0,
+    totalUserInterviews
   );
 
   if (isUserLoading) {
@@ -121,6 +142,7 @@ const HomePage = () => {
           userName={user.name || 'Interviewer'}
           totalUserInterviews={totalUserInterviews}
           totalLatestInterviews={totalLatestInterviews}
+          totalCompletedInterviews={analyticsData?.totalInterviews ?? 0}
           progressPercentage={progressPercentage}
           hasPastInterviews={hasPastInterviews}
         />

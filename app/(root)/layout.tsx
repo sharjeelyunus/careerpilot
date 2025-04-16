@@ -77,6 +77,9 @@ export default function RootLayout({
                   <NavigationMenuLink onClick={() => redirect('/leaderboard')}>
                     Leaderboard
                   </NavigationMenuLink>
+                  <NavigationMenuLink onClick={() => redirect('/interview-history')}>
+                    Interview History
+                  </NavigationMenuLink>
                   <NavigationMenuLink onClick={handleSignOut}>
                     Sign Out
                   </NavigationMenuLink>
