@@ -44,9 +44,9 @@ export const ACHIEVEMENTS = [
     target: 1,
     type: 'score_threshold',
     getProgress: (_: number, interviews: Interview[]) =>
-      interviews.some((i) => i.feedback?.totalScore === 100) ? 1 : 0,
+      interviews.some((i) => i.feedbacks?.some((f) => f.totalScore === 100)) ? 1 : 0,
     isCompleted: (_: number, interviews: Interview[]) =>
-      interviews.some((i) => i.feedback?.totalScore === 100),
+      interviews.some((i) => i.feedbacks?.some((f) => f.totalScore === 100)),
   },
   {
     id: 'achievement-6',
@@ -55,9 +55,9 @@ export const ACHIEVEMENTS = [
     target: 2,
     type: 'score_threshold',
     getProgress: (_: number, interviews: Interview[]) =>
-      interviews.filter((i) => i.feedback?.totalScore === 100).length,
+      interviews.filter((i) => i.feedbacks?.some((f) => f.totalScore === 100)).length,
     isCompleted: (_: number, interviews: Interview[]) =>
-      interviews.filter((i) => i.feedback?.totalScore === 100).length >= 2,
+      interviews.filter((i) => i.feedbacks?.some((f) => f.totalScore === 100)).length >= 2,
   },
   {
     id: 'achievement-7',
@@ -66,13 +66,13 @@ export const ACHIEVEMENTS = [
     target: 90,
     type: 'average_score',
     getProgress: (_: number, interviews: Interview[]) => {
-      const scores = interviews.map((i) => i.feedback?.totalScore || 0);
+      const scores = interviews.map((i) => i.feedbacks?.reduce((acc, f) => acc + f.totalScore, 0) || 0);
       return scores.length
         ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2)
         : 0;
     },
     isCompleted: (_: number, interviews: Interview[]) => {
-      const scores = interviews.map((i) => i.feedback?.totalScore || 0);
+      const scores = interviews.map((i) => i.feedbacks?.reduce((acc, f) => acc + f.totalScore, 0) || 0);
       const avg = scores.length
         ? scores.reduce((a, b) => a + b, 0) / scores.length
         : 0;
@@ -86,9 +86,9 @@ export const ACHIEVEMENTS = [
     target: 3,
     type: 'low_score',
     getProgress: (_: number, interviews: Interview[]) =>
-      interviews.filter((i) => (i.feedback?.totalScore || 0) < 50).length,
+      interviews.filter((i) => i.feedbacks?.some((f) => f.totalScore < 50)).length,
     isCompleted: (_: number, interviews: Interview[]) =>
-      interviews.filter((i) => (i.feedback?.totalScore || 0) < 50).length >= 3,
+      interviews.filter((i) => i.feedbacks?.some((f) => f.totalScore < 50)).length >= 3,
   },
   {
     id: 'achievement-9',
@@ -98,22 +98,22 @@ export const ACHIEVEMENTS = [
     type: 'score_comeback',
     getProgress: (_: number, interviews: Interview[]) => {
       const lowScoreDates = interviews
-        .filter((i) => (i.feedback?.totalScore || 0) < 50)
+        .filter((i) => i.feedbacks?.some((f) => f.totalScore < 50))
         .map((i) => i.createdAt);
       const hasComeback = interviews.some(
         (i) =>
-          (i.feedback?.totalScore || 0) >= 90 &&
+          i.feedbacks?.some((f) => f.totalScore >= 90) &&
           lowScoreDates.some((d) => i.createdAt > d)
       );
       return hasComeback ? 1 : 0;
     },
     isCompleted: (_: number, interviews: Interview[]) => {
       const lowScoreDates = interviews
-        .filter((i) => (i.feedback?.totalScore || 0) < 50)
+        .filter((i) => i.feedbacks?.some((f) => f.totalScore < 50))
         .map((i) => i.createdAt);
       return interviews.some(
         (i) =>
-          (i.feedback?.totalScore || 0) >= 90 &&
+          i.feedbacks?.some((f) => f.totalScore >= 90) &&
           lowScoreDates.some((d) => i.createdAt > d)
       );
     },

@@ -69,22 +69,24 @@ const HomePage = () => {
   // Fetch data when user or pagination changes
   useEffect(() => {
     if (user?.id) {
-      fetchUserInterviews(user.id, userInterviewsPage, ITEMS_PER_PAGE);
-      fetchLatestInterviews(user.id, latestInterviewsPage, ITEMS_PER_PAGE);
       fetchFilterOptions();
-      // Only fetch completed interviews if we don't have them or if they're stale
       fetchCompletedInterviews(user.id);
     }
-  }, [
-    user?.id,
-    userInterviewsPage,
-    latestInterviewsPage,
-    filters,
-    fetchUserInterviews,
-    fetchLatestInterviews,
-    fetchFilterOptions,
-    fetchCompletedInterviews,
-  ]);
+  }, [user?.id, fetchFilterOptions, fetchCompletedInterviews]);
+
+  // Separate effect for user interviews
+  useEffect(() => {
+    if (user?.id) {
+      fetchUserInterviews(user.id, userInterviewsPage, ITEMS_PER_PAGE);
+    }
+  }, [user?.id, userInterviewsPage, fetchUserInterviews]);
+
+  // Separate effect for latest interviews
+  useEffect(() => {
+    if (user?.id) {
+      fetchLatestInterviews(user.id, latestInterviewsPage, ITEMS_PER_PAGE);
+    }
+  }, [user?.id, latestInterviewsPage, fetchLatestInterviews]);
 
   // Separate effect for analytics to avoid circular dependency
   useEffect(() => {

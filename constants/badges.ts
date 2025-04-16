@@ -40,7 +40,7 @@ export const BADGES = [
     icon: '💯',
     type: 'score_threshold',
     condition: (_: number, __: number, interviews: Interview[]) =>
-      interviews.some((i) => i.feedback?.totalScore === 100),
+      interviews.some((i) => i.feedbacks?.some((f) => f.totalScore === 100)),
   },
   {
     id: 'badge-6',
@@ -49,7 +49,7 @@ export const BADGES = [
     icon: '⚡',
     type: 'score_threshold',
     condition: (_: number, __: number, interviews: Interview[]) =>
-      interviews.filter((i) => i.feedback?.totalScore === 100).length >= 2,
+      interviews.filter((i) => i.feedbacks?.some((f) => f.totalScore === 100)).length >= 2,
   },
   {
     id: 'badge-7',
@@ -58,7 +58,7 @@ export const BADGES = [
     icon: '📈',
     type: 'average_score',
     condition: (_: number, __: number, interviews: Interview[]) => {
-      const scores = interviews.map((i) => i.feedback?.totalScore || 0);
+      const scores = interviews.map((i) => i.feedbacks?.reduce((acc, f) => acc + f.totalScore, 0) || 0);
       const avg = scores.length
         ? scores.reduce((a, b) => a + b, 0) / scores.length
         : 0;
@@ -72,7 +72,7 @@ export const BADGES = [
     icon: '😅',
     type: 'low_score',
     condition: (_: number, __: number, interviews: Interview[]) =>
-      interviews.filter((i) => (i.feedback?.totalScore || 0) < 50).length >= 3,
+      interviews.filter((i) => i.feedbacks?.some((f) => f.totalScore < 50)).length >= 3,
   },
   {
     id: 'badge-9',
@@ -82,11 +82,11 @@ export const BADGES = [
     type: 'score_comeback',
     condition: (_: number, __: number, interviews: Interview[]) => {
       const lowScoreDates = interviews
-        .filter((i) => (i.feedback?.totalScore || 0) < 50)
+        .filter((i) => i.feedbacks?.some((f) => f.totalScore < 50))
         .map((i) => i.createdAt);
       return interviews.some(
         (i) =>
-          (i.feedback?.totalScore || 0) >= 90 &&
+          i.feedbacks?.some((f) => f.totalScore >= 90) &&
           lowScoreDates.some((d) => i.createdAt > d)
       );
     },

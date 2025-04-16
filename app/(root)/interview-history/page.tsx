@@ -5,11 +5,11 @@ import { useInterviewStore } from '@/lib/store/interviewStore';
 import { getCurrentUser } from '@/lib/actions/auth.action';
 import useSWR from 'swr';
 import FeedbackCard from '@/components/FeedbackCard';
-import SpinnerLoader from '@/components/ui/loader';
 import { Calendar, MessageSquare } from 'lucide-react';
 import { motion } from 'framer-motion';
 import ProgressTimeline from '@/components/analytics/ProgressTimeline';
 import { useAnalyticsStore } from '@/lib/store/analytics.store';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const InterviewHistoryPage = () => {
   const { data: user, isLoading: isUserLoading } = useSWR(
@@ -21,7 +21,7 @@ const InterviewHistoryPage = () => {
     }
   );
 
-  const { fetchAnalytics, analyticsData } = useAnalyticsStore();
+  const { fetchAnalytics, analyticsData, isLoading: isAnalyticsLoading } = useAnalyticsStore();
 
   // Get state and actions from the Zustand store
   const {
@@ -48,8 +48,108 @@ const InterviewHistoryPage = () => {
 
   if (isUserLoading) {
     return (
-      <div className='flex justify-center items-center min-h-[400px]'>
-        <SpinnerLoader />
+      <div className='min-h-screen pb-16'>
+        {/* Header Section Skeleton */}
+        <motion.section
+          className='mb-12 bg-gradient-to-br from-dark-300 to-dark-100 rounded-3xl p-8 md:p-12 relative overflow-hidden'
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="absolute inset-0 bg-[url('/pattern.png')] opacity-10" />
+          <div className='absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-primary-200/20 to-transparent blur-3xl' />
+          <div className='absolute bottom-0 left-0 w-1/2 h-full bg-gradient-to-r from-primary-200/20 to-transparent blur-3xl' />
+
+          <div className='relative z-10 flex flex-col md:flex-row items-center justify-between gap-8'>
+            <div className='flex flex-col gap-4 max-w-2xl'>
+              <div className='flex items-center gap-3'>
+                <Skeleton className='w-12 h-12 rounded-full' />
+                <Skeleton className='h-10 w-48' />
+              </div>
+              <Skeleton className='h-6 w-96' />
+            </div>
+            <div className='flex flex-col gap-4 bg-dark-200/30 rounded-2xl p-6 border border-primary-200/10 w-full md:w-auto'>
+              <div className='flex items-center gap-3'>
+                <Skeleton className='w-5 h-5' />
+                <div>
+                  <Skeleton className='h-4 w-32 mb-2' />
+                  <Skeleton className='h-8 w-16' />
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.section>
+
+        {/* Progress Timeline Section Skeleton */}
+        <motion.section
+          className='mb-12'
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+        >
+          <div className='bg-dark-200/30 rounded-2xl p-8 border border-primary-200/10'>
+            <Skeleton className='h-8 w-48 mb-8' />
+            <div className='space-y-8'>
+              {[...Array(3)].map((_, index) => (
+                <div key={index} className='space-y-4'>
+                  <Skeleton className='h-6 w-32' />
+                  <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+                    {[...Array(3)].map((_, i) => (
+                      <Skeleton key={i} className='h-24 w-full rounded-lg' />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </motion.section>
+
+        {/* Interview History Section Skeleton */}
+        <motion.section
+          className='mb-16'
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          <div className='flex items-center justify-between mb-8'>
+            <div>
+              <div className='flex items-center gap-2'>
+                <Skeleton className='w-6 h-6' />
+                <Skeleton className='h-8 w-48' />
+              </div>
+              <Skeleton className='h-4 w-64 mt-1' />
+            </div>
+          </div>
+
+          <div className='grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6'>
+            {[...Array(6)].map((_, index) => (
+              <motion.div
+                key={index}
+                className='bg-dark-200/30 rounded-2xl p-6 border border-primary-200/10'
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.1 }}
+              >
+                <div className='space-y-4'>
+                  <div className='flex items-center justify-between'>
+                    <Skeleton className='h-6 w-32' />
+                    <Skeleton className='h-6 w-24' />
+                  </div>
+                  <Skeleton className='h-4 w-full' />
+                  <Skeleton className='h-4 w-3/4' />
+                  <div className='space-y-2'>
+                    <Skeleton className='h-4 w-full' />
+                    <Skeleton className='h-4 w-5/6' />
+                  </div>
+                  <div className='space-y-2'>
+                    <Skeleton className='h-4 w-full' />
+                    <Skeleton className='h-4 w-4/6' />
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </motion.section>
       </div>
     );
   }
@@ -92,8 +192,7 @@ const InterviewHistoryPage = () => {
               </h1>
             </div>
             <p className='text-lg text-light-100/90'>
-              Review your interview feedback and track your improvement over
-              time.
+              Review your interview feedback and track your improvement over time.
             </p>
           </div>
           {!isLoadingCompletedInterviews && (
@@ -101,9 +200,7 @@ const InterviewHistoryPage = () => {
               <div className='flex items-center gap-3'>
                 <Calendar className='w-5 h-5 text-primary-200' />
                 <div>
-                  <h3 className='font-medium text-light-100'>
-                    Total Interviews
-                  </h3>
+                  <h3 className='font-medium text-light-100'>Total Interviews</h3>
                   <p className='text-2xl font-bold text-primary-200'>
                     {totalCompletedInterviews}
                   </p>
@@ -115,26 +212,93 @@ const InterviewHistoryPage = () => {
       </motion.section>
 
       {/* Progress Timeline Section */}
-      {analyticsData?.progressData && (
+      {isAnalyticsLoading ? (
         <motion.section
           className='mb-12'
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
         >
-          <ProgressTimeline
-            progressData={analyticsData.progressData}
-            performanceData={analyticsData.performanceData}
-            skillData={analyticsData.skillData}
-          />
+          <div className='bg-dark-200/30 rounded-2xl p-8 border border-primary-200/10'>
+            <Skeleton className='h-8 w-48 mb-8' />
+            <div className='space-y-8'>
+              {[...Array(3)].map((_, index) => (
+                <div key={index} className='space-y-4'>
+                  <Skeleton className='h-6 w-32' />
+                  <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+                    {[...Array(3)].map((_, i) => (
+                      <Skeleton key={i} className='h-24 w-full rounded-lg' />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </motion.section>
+      ) : (
+        analyticsData?.progressData && (
+          <motion.section
+            className='mb-12'
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+          >
+            <ProgressTimeline
+              progressData={analyticsData.progressData}
+              performanceData={analyticsData.performanceData}
+              skillData={analyticsData.skillData}
+            />
+          </motion.section>
+        )
       )}
 
       {/* Interview History Section */}
       {isLoadingCompletedInterviews ? (
-        <div className='flex justify-center items-center min-h-[400px]'>
-          <SpinnerLoader />
-        </div>
+        <motion.section
+          className='mb-16'
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          <div className='flex items-center justify-between mb-8'>
+            <div>
+              <div className='flex items-center gap-2'>
+                <Skeleton className='w-6 h-6' />
+                <Skeleton className='h-8 w-48' />
+              </div>
+              <Skeleton className='h-4 w-64 mt-1' />
+            </div>
+          </div>
+
+          <div className='grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6'>
+            {[...Array(6)].map((_, index) => (
+              <motion.div
+                key={index}
+                className='bg-dark-200/30 rounded-2xl p-6 border border-primary-200/10'
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.1 }}
+              >
+                <div className='space-y-4'>
+                  <div className='flex items-center justify-between'>
+                    <Skeleton className='h-6 w-32' />
+                    <Skeleton className='h-6 w-24' />
+                  </div>
+                  <Skeleton className='h-4 w-full' />
+                  <Skeleton className='h-4 w-3/4' />
+                  <div className='space-y-2'>
+                    <Skeleton className='h-4 w-full' />
+                    <Skeleton className='h-4 w-5/6' />
+                  </div>
+                  <div className='space-y-2'>
+                    <Skeleton className='h-4 w-full' />
+                    <Skeleton className='h-4 w-4/6' />
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </motion.section>
       ) : (
         <motion.section
           className='mb-16'

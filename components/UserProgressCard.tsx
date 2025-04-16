@@ -33,6 +33,8 @@ export function UserProgressCard({ progress }: UserProgressCardProps) {
       : ((progress.experiencePoints - currentLevelXP) / (nextLevelXP - currentLevelXP)) * 100
   ));
 
+  console.log(progress);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -195,13 +197,13 @@ export function UserProgressCard({ progress }: UserProgressCardProps) {
                         <div className='bg-primary-200/10 p-3 rounded-full group-hover:bg-primary-200/20 transition-colors'>
                           <Crown className='h-6 w-6 text-primary-200' />
                         </div>
-                        <div className='text-center'>
-                          <p className='text-sm font-medium text-light-100'>
+                        <div className="flex flex-col items-center">
+                          <div className="text-sm font-medium text-light-100">
                             {badge.name}
-                          </p>
-                          <p className='text-xs text-light-100/50 mt-1'>
+                          </div>
+                          <div className="text-xs text-light-100/50">
                             {badge.description}
-                          </p>
+                          </div>
                         </div>
                       </div>
                     </div>

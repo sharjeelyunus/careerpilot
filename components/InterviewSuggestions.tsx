@@ -10,6 +10,7 @@ import useSWR from 'swr';
 import { generateInterview } from '@/lib/actions/general.action';
 import { toast } from 'sonner';
 import { useInterviewStore } from '@/lib/store/interviewStore';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface Suggestion {
   role: string;
@@ -145,9 +146,61 @@ export function InterviewSuggestions({ userId }: { userId: string }) {
 
   if (isLoading) {
     return (
-      <div className='flex justify-center items-center gap-4'>
-        <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-primary-200'></div>
-        <p className='text-light-100/70'>Loading Suggestions...</p>
+      <div className='space-y-8'>
+        <div>
+          <div className='flex items-center gap-2'>
+            <Star className='w-6 h-6 text-primary-200' />
+            <h2 className='text-3xl font-bold'>Recommended Interviews</h2>
+          </div>
+          <p className='text-light-100/70 mt-1'>
+            Personalized suggestions based on your profile
+          </p>
+        </div>
+
+        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
+          {[...Array(6)].map((_, index) => (
+            <motion.div
+              key={index}
+              className='group bg-dark-200/30 rounded-2xl overflow-hidden border border-primary-200/10'
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: index * 0.1 }}
+            >
+              {/* Header Section */}
+              <div className='h-24 bg-gradient-to-r from-dark-300 to-dark-200 relative overflow-hidden flex-shrink-0 p-6'>
+                <div className='space-y-3'>
+                  <div className='flex items-center gap-2'>
+                    <Skeleton className='h-5 w-5 rounded-full' />
+                    <Skeleton className='h-4 w-20' />
+                  </div>
+                  <Skeleton className='h-6 w-32' />
+                </div>
+              </div>
+
+              {/* Content Section */}
+              <div className='flex-1 flex flex-col p-6'>
+                <div className='flex-1 space-y-4'>
+                  <div className='grid grid-cols-[100px_1fr] items-center'>
+                    <span className='text-sm text-light-100/70'>Level:</span>
+                    <Skeleton className='h-4 w-16' />
+                  </div>
+                  <div className='grid grid-cols-[100px_1fr] items-start'>
+                    <span className='text-sm text-light-100/70'>Tech Stack:</span>
+                    <Skeleton className='h-4 w-24' />
+                  </div>
+                  <div className='grid grid-cols-[100px_1fr] items-center'>
+                    <span className='text-sm text-light-100/70'>Questions:</span>
+                    <Skeleton className='h-4 w-8' />
+                  </div>
+                </div>
+
+                <div className='mt-6'>
+                  <Skeleton className='h-10 w-full rounded-lg' />
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
       </div>
     );
   }

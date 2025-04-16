@@ -4,12 +4,12 @@ import React from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getLeaderboard } from '@/lib/actions/general.action';
 import useSWR from 'swr';
-import SpinnerLoader from '@/components/ui/loader';
 import { redirect } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { BADGES } from '@/constants/badges';
 import { motion } from 'framer-motion';
 import { Trophy, Medal, Award, Star } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const LeaderboardPage = () => {
   const { data: users, isLoading } = useSWR('leaderboard', getLeaderboard, {
@@ -19,8 +19,6 @@ const LeaderboardPage = () => {
     dedupingInterval: 10000, // Dedupe requests within 10 seconds
     keepPreviousData: true,
   });
-
-  if (isLoading) return <SpinnerLoader />;
 
   const getRankIcon = (index: number) => {
     switch (index) {
@@ -67,7 +65,50 @@ const LeaderboardPage = () => {
 
       {/* Top 3 Podium */}
       <div className='grid grid-cols-1 md:grid-cols-3 gap-6 mb-12'>
-        {users &&
+        {isLoading ? (
+          // Skeleton loading for top 3
+          [...Array(3)].map((_, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+              className={cn(
+                'relative group cursor-pointer h-full',
+                index === 0
+                  ? 'md:order-1'
+                  : index === 1
+                  ? 'md:order-2'
+                  : 'md:order-3'
+              )}
+            >
+              <div className='p-6 rounded-2xl border backdrop-blur-sm transition-all duration-300 h-full flex flex-col bg-dark-200/50 border-primary-200/10'>
+                <div className='absolute -top-4 left-1/2 -translate-x-1/2'>
+                  <Skeleton className='h-6 w-6 rounded-full' />
+                </div>
+                <div className='flex flex-col items-center gap-4 pt-4 flex-grow'>
+                  <Skeleton className='h-20 w-20 rounded-full' />
+                  <div className='text-center w-full'>
+                    <Skeleton className='h-6 w-32 mx-auto mb-2' />
+                    <Skeleton className='h-4 w-24 mx-auto' />
+                  </div>
+                  <div className='flex flex-row gap-2 mt-auto'>
+                    {[...Array(3)].map((_, badgeIndex) => (
+                      <Skeleton
+                        key={badgeIndex}
+                        className={cn(
+                          'h-9 w-9 rounded-full',
+                          badgeIndex >= 1 && '-ml-3'
+                        )}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          ))
+        ) : (
+          users &&
           users.slice(0, 3).map((user, index) => (
             <motion.div
               key={user.id}
@@ -132,12 +173,39 @@ const LeaderboardPage = () => {
                 </div>
               </div>
             </motion.div>
-          ))}
+          ))
+        )}
       </div>
 
       {/* Rest of the Leaderboard */}
       <div className='space-y-4'>
-        {users &&
+        {isLoading ? (
+          // Skeleton loading for rest of the list
+          [...Array(7)].map((_, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.3, delay: index * 0.05 }}
+              className='group cursor-pointer'
+            >
+              <div className='bg-dark-200/30 p-4 rounded-xl border border-primary-200/10'>
+                <div className='flex items-center gap-4'>
+                  <div className='flex items-center gap-4 flex-1'>
+                    <Skeleton className='h-6 w-8' />
+                    <Skeleton className='h-10 w-10 rounded-full' />
+                    <Skeleton className='h-6 w-32' />
+                  </div>
+                  <div className='flex items-center gap-2'>
+                    <Skeleton className='h-4 w-4' />
+                    <Skeleton className='h-5 w-16' />
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          ))
+        ) : (
+          users &&
           users.slice(3).map((user, index) => (
             <motion.div
               key={user.id}
@@ -172,7 +240,8 @@ const LeaderboardPage = () => {
                 </div>
               </div>
             </motion.div>
-          ))}
+          ))
+        )}
       </div>
     </div>
   );

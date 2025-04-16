@@ -3,8 +3,18 @@ import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import dayjs from 'dayjs';
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
-import { User, Interview, UserProgress, Badge, Achievement } from '@/types';
+import {
+  User,
+  Interview,
+  UserProgress,
+  Badge,
+  Achievement,
+  BadgeType,
+  AchievementType,
+} from '@/types';
 import { XPService } from '@/lib/services/xp.service';
+import { BADGES } from '@/constants/badges';
+import { ACHIEVEMENTS } from '@/constants/achievemnts';
 
 dayjs.extend(isSameOrAfter);
 
@@ -51,32 +61,68 @@ export function calculateUserProgress(
   user: User | undefined,
   userInterviews: Interview[] | undefined
 ): UserProgress {
-  const completedInterviews = userInterviews?.filter(
-    (interview) => interview.feedbacks?.length
-  ).length ?? 0;
+  const completedInterviews =
+    userInterviews?.filter((interview) => interview.feedbacks?.length).length ??
+    0;
 
   const averageScore = userInterviews?.length
     ? userInterviews.reduce((acc, interview) => {
         if (!interview.feedbacks?.length) return acc;
-        
-        const interviewScore = interview.feedbacks.reduce(
-          (feedbackAcc, feedback) => feedbackAcc + feedback.totalScore,
-          0
-        ) / interview.feedbacks.length;
-        
+
+        const interviewScore =
+          interview.feedbacks.reduce(
+            (feedbackAcc, feedback) => feedbackAcc + feedback.totalScore,
+            0
+          ) / interview.feedbacks.length;
+
         return acc + interviewScore;
       }, 0) / completedInterviews
     : 0;
 
   const streak = user?.streak ?? 0;
-  const badges = user?.badges ?? [];
-  const achievements = user?.achievements ?? [];
+  const userBadges = user?.badges ?? [];
+
+  // Enrich badges with full badge information
+  const enrichedBadges: Badge[] = userBadges.map((userBadge) => {
+    const badgeInfo = BADGES.find((b) => b.id === userBadge.id);
+    return {
+      ...userBadge,
+      name: badgeInfo?.name ?? userBadge.id,
+      description: badgeInfo?.description ?? '',
+      icon: badgeInfo?.icon ?? '🏆',
+      type: (badgeInfo?.type ?? 'achievement') as BadgeType,
+    };
+  });
+
+  // Get achievements from constants and calculate their progress
+  const userAchievements: Achievement[] = ACHIEVEMENTS.map((achievement) => {
+    const progress = Number(
+      achievement.getProgress(completedInterviews, userInterviews ?? [])
+    );
+    const isCompleted = achievement.isCompleted(
+      completedInterviews,
+      userInterviews ?? []
+    );
+    const hasBadge = enrichedBadges.some(
+      (badge) => badge.id === achievement.id
+    );
+
+    return {
+      id: achievement.id,
+      name: achievement.name,
+      description: achievement.description,
+      progress,
+      target: achievement.target,
+      completed: isCompleted || hasBadge,
+      type: achievement.type as AchievementType,
+    };
+  });
 
   const xpService = XPService.getInstance();
   const experiencePoints = xpService.calculateXP(
     userInterviews ?? [],
-    badges,
-    achievements,
+    enrichedBadges,
+    [],
     streak
   );
   const level = xpService.calculateLevel(experiencePoints);
@@ -87,9 +133,9 @@ export function calculateUserProgress(
     completedInterviews,
     averageScore,
     streak,
-    badges: badges as Badge[],
-    achievements: achievements.filter(
-      (achievement: Achievement) => !achievement.completed && achievement.progress > 0
+    badges: enrichedBadges,
+    achievements: userAchievements.filter(
+      (achievement) => !achievement.completed && achievement.progress > 0
     ),
     level,
     experiencePoints,
