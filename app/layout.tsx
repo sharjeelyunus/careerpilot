@@ -33,6 +33,14 @@ export default function RootLayout({
               className='text-primary-200 hover:underline'
             >
               Sharjeel Yunus
+            </Link>{' '}
+            &{' '}
+            <Link
+              href='https://github.com/farhanashrafdev'
+              target='_blank'
+              className='text-primary-200 hover:underline'
+            >
+              Farhan Ashraf
             </Link>
           </p>
         </div>
