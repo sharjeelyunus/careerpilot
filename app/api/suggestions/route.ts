@@ -36,7 +36,7 @@ export async function POST(request: Request) {
     // Generate suggestions using Gemini
     const { text: suggestions } = await generateText({
       model: google('gemini-2.0-flash-001'),
-      prompt: `As an expert career advisor, create a diverse set of interview suggestions to help the user advance in their career. The suggestions should follow a clear progression path and cover different aspects of frontend/fullstack development.
+      prompt: `As an expert career advisor, create a diverse set of interview suggestions to help the user advance in their career. The suggestions should follow a clear progression path and cover different aspects of development.
 
       User Data:
       - Current Skills: ${userData.skills.join(', ')}
