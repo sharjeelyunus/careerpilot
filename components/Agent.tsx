@@ -115,27 +115,29 @@ const Agent = ({
 
   const handleCall = async () => {
     setCallStatus(CallStatus.CONNECTING);
-
+    const cleanQuestion = (question: string) => {
+      return question.replace(/\*\*/g, '');
+    };
     try {
       if (type === 'generate') {
         await vapi.start(process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!, {
           variableValues: {
             username: user?.name || '',
             userid: user?.id || '',
-          }
+          },
         });
       } else {
         let formattedQuestions = '';
         if (questions) {
           formattedQuestions = questions
-            .map((questions) => `- ${questions}`)
+            .map((question) => `- ${cleanQuestion(question)}`)
             .join('\n');
         }
 
         await vapi.start(interviewer, {
           variableValues: {
             questions: formattedQuestions,
-          }
+          },
         });
       }
     } catch (error) {
