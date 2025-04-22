@@ -69,10 +69,10 @@ export function InterviewSuggestions({ userId }: { userId: string }) {
       return data.suggestions;
     },
     {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-      revalidateIfStale: false,
-      dedupingInterval: 24 * 60 * 60 * 1000,
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+      revalidateIfStale: true,
+      dedupingInterval: 5 * 60 * 1000, // 5 minutes
       keepPreviousData: true,
     }
   );
