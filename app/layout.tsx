@@ -21,10 +21,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang='en' suppressHydrationWarning>
-      <body className={`${monaSans.className} antialiased pattern`}>
-        <Providers>{children}</Providers>
+      <body className={`${monaSans.className} antialiased pattern min-h-screen flex flex-col`}>
+        <div className="flex-grow">
+          <Providers>{children}</Providers>
+        </div>
         {/* Footer */}
-        <div className='mt-auto py-8'>
+        <footer className='py-8'>
           <p className='text-center text-sm text-light-100/50'>
             Built with ❤️ by{' '}
             <Link
@@ -43,7 +45,7 @@ export default function RootLayout({
               Farhan Ashraf
             </Link>
           </p>
-        </div>
+        </footer>
       </body>
     </html>
   );
