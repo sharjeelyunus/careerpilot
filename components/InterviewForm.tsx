@@ -6,21 +6,13 @@ import FormField from './FormField';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import Link from 'next/link';
 import { getCurrentUser } from '@/lib/actions/auth.action';
 import { generateInterview } from '@/lib/actions/general.action';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import useSWR from 'swr';
-import { useState } from 'react';
-import {
-  Loader2,
-  Briefcase,
-  Code,
-  Layers,
-  Zap,
-  HelpCircle,
-} from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Loader2, Briefcase, Code, Zap, HelpCircle } from 'lucide-react';
 import { Card, CardContent } from './ui/card';
 import {
   Tooltip,
@@ -31,11 +23,25 @@ import {
 import { motion } from 'framer-motion';
 
 const formSchema = z.object({
-  role: z.string().min(1, 'Job role is required'),
-  type: z.enum(['technical', 'behavioral', 'mixed']),
-  level: z.enum(['junior', 'mid', 'senior']),
-  techstack: z.string().min(1, 'Tech stack is required'),
-  amount: z.number().min(1).max(20),
+  role: z.string()
+    .min(1, 'Job role is required')
+    .max(50, 'Job role cannot exceed 50 characters'),
+  type: z.enum(['technical', 'behavioral', 'mixed'], {
+    required_error: 'Please select an interview type',
+  }),
+  level: z.enum(['junior', 'mid', 'senior'], {
+    required_error: 'Please select an experience level',
+  }),
+  techstack: z.string()
+    .min(1, 'Tech stack is required')
+    .max(100, 'Tech stack cannot exceed 100 characters'),
+  amount: z.number({
+    required_error: 'Number of questions is required',
+    invalid_type_error: 'Number of questions must be a number',
+  })
+    .int('Number of questions must be a whole number')
+    .min(1, 'Minimum 1 question required')
+    .max(20, 'Maximum 20 questions allowed'),
 });
 
 const InterviewForm = () => {
@@ -59,10 +65,10 @@ const InterviewForm = () => {
     setIsLoading(true);
     try {
       const response = await generateInterview({
-        role: values.role,
+        role: values.role.trim(),
         type: values.type,
         level: values.level,
-        techstack: values.techstack,
+        techstack: values.techstack.trim(),
         amount: values.amount,
         userid: user?.id || '',
       });
@@ -84,44 +90,55 @@ const InterviewForm = () => {
     }
   };
 
+  // Redirect if user is not logged in
+  useEffect(() => {
+    if (!user?.id) {
+      toast.error('Please log in to create an interview');
+      router.push('/sign-in');
+    }
+  }, [user, router]);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className='w-full max-w-md mx-auto'
+      className='w-full max-w-xl mx-auto'
     >
-      <div className='mb-3 text-center relative'>
-        <div className='pt-8'>
-          <h2 className='text-lg font-bold text-light-100 bg-clip-text text-transparent bg-gradient-to-r from-primary-200 to-primary-300'>
-            Create Your Interview
-          </h2>
-          <p className='text-xs text-light-100/70 mt-0.5'>
-            Fill in the details below to generate a personalized interview
-          </p>
-        </div>
+      <div className='mb-4 text-center'>
+        <h2 className='text-xl font-bold text-light-100 bg-clip-text text-transparent bg-gradient-to-r from-primary-200 to-primary-300'>
+          Create Your Interview
+        </h2>
+        <p className='text-sm text-light-100/70 mt-1'>
+          Fill in the details below to generate a personalized interview
+        </p>
       </div>
 
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
           className='w-full flex flex-col gap-3 form'
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && e.target instanceof HTMLInputElement) {
+              e.preventDefault();
+            }
+          }}
         >
           <Card className='bg-dark-200/50 border-primary-200/20 shadow-lg shadow-primary-200/5 backdrop-blur-sm'>
             <CardContent className='p-4'>
-              <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
+              <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
                 {/* Job Details Section */}
                 <motion.div
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.4, delay: 0.1 }}
-                  className='space-y-2'
+                  className='space-y-3'
                 >
-                  <div className='flex items-center gap-1.5'>
-                    <div className='w-6 h-6 rounded-full bg-primary-200/10 flex items-center justify-center'>
-                      <Briefcase className='h-3.5 w-3.5 text-primary-200' />
+                  <div className='flex items-center gap-2 mb-2'>
+                    <div className='w-7 h-7 rounded-full bg-primary-200/10 flex items-center justify-center'>
+                      <Briefcase className='h-4 w-4 text-primary-200' />
                     </div>
-                    <h3 className='text-xs font-medium text-light-100'>
+                    <h3 className='text-sm font-medium text-light-100'>
                       Job Details
                     </h3>
                   </div>
@@ -135,7 +152,7 @@ const InterviewForm = () => {
                     control={form.control}
                     name='level'
                     label='Experience Level'
-                    placeholder='Junior'
+                    placeholder='Select level'
                     type='dropdown'
                     options={[
                       { label: 'Junior', value: 'junior' },
@@ -150,13 +167,13 @@ const InterviewForm = () => {
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.4, delay: 0.2 }}
-                  className='space-y-2'
+                  className='space-y-3'
                 >
-                  <div className='flex items-center gap-1.5'>
-                    <div className='w-6 h-6 rounded-full bg-primary-200/10 flex items-center justify-center'>
-                      <Code className='h-3.5 w-3.5 text-primary-200' />
+                  <div className='flex items-center gap-2 mb-2'>
+                    <div className='w-7 h-7 rounded-full bg-primary-200/10 flex items-center justify-center'>
+                      <Code className='h-4 w-4 text-primary-200' />
                     </div>
-                    <h3 className='text-xs font-medium text-light-100'>
+                    <h3 className='text-sm font-medium text-light-100'>
                       Technical Details
                     </h3>
                   </div>
@@ -170,7 +187,7 @@ const InterviewForm = () => {
                     control={form.control}
                     name='type'
                     label='Interview Type'
-                    placeholder='Technical'
+                    placeholder='Select type'
                     type='dropdown'
                     options={[
                       { label: 'Technical', value: 'technical' },
@@ -186,25 +203,25 @@ const InterviewForm = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.3 }}
-                className='mt-3 pt-3 border-t border-primary-200/10'
+                className='mt-4 pt-4 border-t border-primary-200/10'
               >
-                <div className='flex items-center gap-1.5 mb-2'>
-                  <div className='w-6 h-6 rounded-full bg-primary-200/10 flex items-center justify-center'>
-                    <Zap className='h-3.5 w-3.5 text-primary-200' />
+                <div className='flex items-center gap-2 mb-2'>
+                  <div className='w-7 h-7 rounded-full bg-primary-200/10 flex items-center justify-center'>
+                    <Zap className='h-4 w-4 text-primary-200' />
                   </div>
-                  <h3 className='text-xs font-medium text-light-100'>
+                  <h3 className='text-sm font-medium text-light-100'>
                     Interview Settings
                   </h3>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <div className='w-4 h-4 rounded-full bg-primary-200/5 flex items-center justify-center cursor-help'>
-                          <HelpCircle className='h-2.5 w-2.5 text-light-100/50' />
+                        <div className='w-5 h-5 rounded-full bg-primary-200/5 flex items-center justify-center cursor-help ml-1'>
+                          <HelpCircle className='h-3 w-3 text-light-100/50' />
                         </div>
                       </TooltipTrigger>
                       <TooltipContent>
                         <p className='max-w-xs text-xs'>
-                          Choose how many questions you want in your interview.
+                          Choose between 1-20 questions for your interview.
                         </p>
                       </TooltipContent>
                     </Tooltip>
@@ -216,6 +233,8 @@ const InterviewForm = () => {
                   label='Number of Questions'
                   type='number'
                   placeholder='5'
+                  min={1}
+                  max={20}
                 />
               </motion.div>
             </CardContent>
@@ -228,14 +247,16 @@ const InterviewForm = () => {
           >
             <Button
               type='submit'
-              className='btn-primary w-full h-10 text-sm font-medium shadow-lg shadow-primary-200/10 hover:shadow-primary-200/20 transition-all duration-300'
-              disabled={isLoading}
+              className='btn-primary w-full h-11 text-sm font-medium shadow-lg shadow-primary-200/10 hover:shadow-primary-200/20 transition-all duration-300'
+              disabled={isLoading || !user?.id}
             >
               {isLoading ? (
                 <>
                   <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                   Generating Interview...
                 </>
+              ) : !user?.id ? (
+                'Please log in to continue'
               ) : (
                 'Generate Interview'
               )}
@@ -243,36 +264,6 @@ const InterviewForm = () => {
           </motion.div>
         </form>
       </Form>
-
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.4, delay: 0.5 }}
-        className='flex items-center justify-center my-3'
-      >
-        <div className='h-px bg-primary-200/20 flex-grow'></div>
-        <span className='px-2 text-light-100/50 text-xs'>or</span>
-        <div className='h-px bg-primary-200/20 flex-grow'></div>
-      </motion.div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.6 }}
-      >
-        <Button
-          asChild
-          className='btn-secondary w-full h-10 text-sm font-medium'
-        >
-          <Link
-            href={user?.id ? '/interview' : 'sign-in'}
-            className='flex items-center justify-center gap-2'
-          >
-            <Layers className='h-4 w-4' />
-            Start a call with an AI
-          </Link>
-        </Button>
-      </motion.div>
     </motion.div>
   );
 };

@@ -4,7 +4,7 @@ import { interviewer } from '@/constants';
 import { getCurrentUser } from '@/lib/actions/auth.action';
 import { createFeedback } from '@/lib/actions/general.action';
 import { cn } from '@/lib/utils';
-import { vapi } from '@/lib/vapi.sdk';
+import { echoPilot } from '@/lib/echoPilot.sdk';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
@@ -41,9 +41,9 @@ const Agent = ({
   const [messages, setMessages] = useState<SavedMessage[]>([]);
 
   useEffect(() => {
-    // Check if Vapi token is available
-    if (!process.env.NEXT_PUBLIC_VAPI_WEB_TOKEN) {
-      console.error('Vapi token is not available');
+    // Check if EchoPilot token is available
+    if (!process.env.NEXT_PUBLIC_ECHOPILOT_API_KEY) {
+      console.error('EchoPilot token is not available');
       return;
     }
 
@@ -69,20 +69,20 @@ const Agent = ({
       router.push('/');
     };
 
-    vapi.on('call-start', onCallStart);
-    vapi.on('call-end', onCallEnd);
-    vapi.on('message', onMessage);
-    vapi.on('speech-start', onSpeechStart);
-    vapi.on('speech-end', onSpeechEnd);
-    vapi.on('error', onError);
+    echoPilot.on('call-start', onCallStart);
+    echoPilot.on('call-end', onCallEnd);
+    echoPilot.on('message', onMessage);
+    echoPilot.on('speech-start', onSpeechStart);
+    echoPilot.on('speech-end', onSpeechEnd);
+    echoPilot.on('error', onError);
 
     return () => {
-      vapi.off('call-start', onCallStart);
-      vapi.off('call-end', onCallEnd);
-      vapi.off('message', onMessage);
-      vapi.off('speech-start', onSpeechStart);
-      vapi.off('speech-end', onSpeechEnd);
-      vapi.off('error', onError);
+      echoPilot.off('call-start', onCallStart);
+      echoPilot.off('call-end', onCallEnd);
+      echoPilot.off('message', onMessage);
+      echoPilot.off('speech-start', onSpeechStart);
+      echoPilot.off('speech-end', onSpeechEnd);
+      echoPilot.off('error', onError);
     };
   }, [router]);
 
@@ -120,7 +120,7 @@ const Agent = ({
     };
     try {
       if (type === 'generate') {
-        await vapi.start(process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!, {
+        await echoPilot.start(process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!, {
           variableValues: {
             username: user?.name || '',
             userid: user?.id || '',
@@ -134,7 +134,7 @@ const Agent = ({
             .join('\n');
         }
 
-        await vapi.start(interviewer, {
+        await echoPilot.start(interviewer, {
           variableValues: {
             questions: formattedQuestions,
           },
@@ -148,7 +148,7 @@ const Agent = ({
 
   const handleDisconnectCall = async () => {
     setCallStatus(CallStatus.FINISHED);
-    vapi.stop();
+    echoPilot.stop();
   };
 
   const latestMessage = messages[messages.length - 1]?.content;
@@ -167,7 +167,7 @@ const Agent = ({
           <div className='avatar'>
             <Image
               src='/ai-avatar.png'
-              alt='vapi'
+              alt='EchoPilot'
               width={65}
               height={54}
               className='object-cover'

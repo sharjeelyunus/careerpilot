@@ -23,6 +23,8 @@ interface FormFieldProps<T extends FieldValues> {
   type?: 'text' | 'email' | 'password' | 'file' | 'number' | 'dropdown';
   options?: DropdownOption[];
   autoComplete?: string;
+  min?: number;
+  max?: number;
 }
 
 type DropdownOption = {
@@ -38,6 +40,8 @@ const FormField = <T extends FieldValues>({
   type = 'text',
   options,
   autoComplete,
+  min,
+  max,
 }: FormFieldProps<T>) => (
   <Controller
     control={control}
@@ -48,7 +52,10 @@ const FormField = <T extends FieldValues>({
           <FormItem>
             <FormLabel className='label'>{label}</FormLabel>
             <FormControl>
-              <Select>
+              <Select
+                onValueChange={field.onChange}
+                defaultValue={field.value}
+              >
                 <SelectTrigger className='w-full'>
                   <SelectValue placeholder={placeholder} />
                 </SelectTrigger>
@@ -61,6 +68,7 @@ const FormField = <T extends FieldValues>({
                 </SelectContent>
               </Select>
             </FormControl>
+            <FormMessage />
           </FormItem>
         ) : (
           <FormItem>
@@ -71,7 +79,25 @@ const FormField = <T extends FieldValues>({
                 placeholder={placeholder}
                 type={type}
                 autoComplete={autoComplete}
+                min={type === 'number' ? min : undefined}
+                max={type === 'number' ? max : undefined}
                 {...field}
+                onChange={(e) => {
+                  if (type === 'number') {
+                    const value = parseInt(e.target.value);
+                    if (!isNaN(value)) {
+                      if (min !== undefined && value < min) {
+                        field.onChange(min);
+                      } else if (max !== undefined && value > max) {
+                        field.onChange(max);
+                      } else {
+                        field.onChange(value);
+                      }
+                    }
+                  } else {
+                    field.onChange(e);
+                  }
+                }}
               />
             </FormControl>
             <FormMessage />

@@ -197,15 +197,15 @@
     @apply w-full;
 
     .label {
-      @apply !text-light-100 !font-normal;
+      @apply !text-light-100 !font-medium text-sm mb-1.5;
     }
 
     .input {
-      @apply !bg-dark-200 !rounded-full !min-h-12 !px-5 placeholder:!text-light-100;
+      @apply !bg-dark-300/50 !rounded-lg !min-h-11 !px-4 !border !border-primary-200/10 placeholder:!text-light-100/50 !text-light-100 hover:!border-primary-200/30 focus:!border-primary-200/50 transition-colors duration-200;
     }
 
     .btn {
-      @apply !w-full !bg-primary-200 !text-dark-100 hover:!bg-primary-200/80 !rounded-full !min-h-10 !font-bold !px-5 cursor-pointer;
+      @apply !w-full !bg-primary-200 !text-dark-100 hover:!bg-primary-200/90 !rounded-lg !min-h-11 !font-bold !px-5 cursor-pointer transition-all duration-200;
     }
   }
 
