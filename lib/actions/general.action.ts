@@ -144,7 +144,11 @@ export async function getLatestInterviews(
       .orderBy('createdAt', 'desc');
 
     if (userId) {
-      query = query.where('userId', '!=', userId);
+      query = query.where('userId', 'not-in', [
+        userId,
+        'KxjWu1BhMqPZqad1ZLGaPdDELaT2',
+        'NkJPi6swUpfZJaOv0N1HpvDETpj2',
+      ]);
     }
 
     // Apply filters
@@ -204,7 +208,7 @@ export const getCachedInterviewById = unstable_cache(
   ['interview-by-id'],
   {
     revalidate: 60, // Cache for 60 seconds
-    tags: ['interview']
+    tags: ['interview'],
   }
 );
 
