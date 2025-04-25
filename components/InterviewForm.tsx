@@ -21,6 +21,7 @@ import {
   TooltipTrigger,
 } from './ui/tooltip';
 import { motion } from 'framer-motion';
+import { AppEvents } from '@/lib/services/app-events.service';
 
 const formSchema = z.object({
   role: z.string()
@@ -64,6 +65,14 @@ const InterviewForm = () => {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
     try {
+      await AppEvents.trackInterviewCreationStart({
+        role: values.role,
+        type: values.type,
+        level: values.level,
+        techstack: values.techstack,
+        amount: values.amount,
+      });
+
       const response = await generateInterview({
         role: values.role.trim(),
         type: values.type,
@@ -74,21 +83,62 @@ const InterviewForm = () => {
       });
 
       if (response.success) {
+        await AppEvents.trackInterviewCreationComplete(response.interviewId || '', {
+          role: values.role,
+          type: values.type,
+          level: values.level,
+          techstack: values.techstack,
+          amount: values.amount,
+        });
+
+        await AppEvents.trackInterviewStart(
+          response.interviewId || '',
+          values.type,
+          values.level,
+          {
+            role: values.role,
+            techstack: values.techstack,
+            amount: values.amount,
+          }
+        );
+        
         if (response.interviewId) {
           router.push(`/interview/${response.interviewId}`);
         } else {
           router.push('/');
         }
       } else {
+        await AppEvents.trackError(new Error('Failed to generate interview'), {
+          context: 'interview_generation',
+          role: values.role,
+          type: values.type,
+        });
         toast.error('Something went wrong');
       }
     } catch (error) {
       console.error('Error generating interview:', error);
+      await AppEvents.trackError(error as Error, { 
+        context: 'interview_generation',
+        role: values.role,
+        type: values.type,
+      });
       toast.error('Failed to generate interview. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
+
+  // Track form interactions
+  useEffect(() => {
+    const trackFormInteraction = () => {
+      AppEvents.trackUserEngagement('form_interaction', 0, {
+        form_id: 'interview_creation',
+        action: 'view',
+      });
+    };
+
+    trackFormInteraction();
+  }, []);
 
   // Redirect if user is not logged in
   useEffect(() => {

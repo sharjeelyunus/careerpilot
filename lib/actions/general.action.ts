@@ -14,6 +14,7 @@ import {
 import { google } from '@ai-sdk/google';
 import { generateObject } from 'ai';
 import axios from 'axios';
+import { unstable_cache } from 'next/cache';
 
 // Cache configuration
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
@@ -189,6 +190,23 @@ export async function getLatestInterviews(
     throw new Error('Failed to fetch latest interviews');
   }
 }
+
+export const getCachedInterviewById = unstable_cache(
+  async (id: string) => {
+    try {
+      const interview = await getInterviewById(id);
+      return interview;
+    } catch (error) {
+      console.error('Error fetching interview:', error);
+      return null;
+    }
+  },
+  ['interview-by-id'],
+  {
+    revalidate: 60, // Cache for 60 seconds
+    tags: ['interview']
+  }
+);
 
 export async function getInterviewById(id: string): Promise<Interview | null> {
   const interview = await db.collection('interviews').doc(id).get();

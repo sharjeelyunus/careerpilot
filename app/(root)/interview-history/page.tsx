@@ -10,6 +10,7 @@ import { motion } from 'framer-motion';
 import ProgressTimeline from '@/components/analytics/ProgressTimeline';
 import { useAnalyticsStore } from '@/lib/store/analytics.store';
 import { Skeleton } from '@/components/ui/skeleton';
+import { AppEvents } from '@/lib/services/app-events.service';
 
 const InterviewHistoryPage = () => {
   const { data: user, isLoading: isUserLoading } = useSWR(
@@ -36,15 +37,33 @@ const InterviewHistoryPage = () => {
     if (user?.id) {
       // Force refresh completed interviews on the history page to ensure we have the latest data
       fetchCompletedInterviews(user.id, true);
-    }
-  }, [user?.id, fetchCompletedInterviews]);
+      AppEvents.trackPageView('interview_history', {
+        user_id: user.id,
+        interview_count: totalCompletedInterviews,
+      });
 
-  // Separate effect for analytics to avoid circular dependency
+      // Track user session
+      const sessionStartTime = Date.now();
+      return () => {
+        const duration = Math.floor((Date.now() - sessionStartTime) / 1000);
+        AppEvents.trackUserSession(user.id, duration, {
+          page: 'interview_history',
+          interview_count: totalCompletedInterviews,
+        });
+      };
+    }
+  }, [user?.id, fetchCompletedInterviews, totalCompletedInterviews]);
+
+  // Track analytics data loading
   useEffect(() => {
-    if (completedInterviews.length > 0) {
+    if (completedInterviews.length > 0 && user?.id) {
+      AppEvents.trackFeatureUsage('analytics', 'load_data', {
+        interview_count: completedInterviews.length,
+        user_id: user.id,
+      });
       fetchAnalytics(completedInterviews);
     }
-  }, [completedInterviews, fetchAnalytics]);
+  }, [completedInterviews, fetchAnalytics, user?.id]);
 
   if (isUserLoading) {
     return (

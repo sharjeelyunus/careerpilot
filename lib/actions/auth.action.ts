@@ -1,8 +1,15 @@
 'use server';
 
-import { auth, db } from '@/firebase/admin';
+import { auth as adminAuth, db } from '@/firebase/admin';
+import { auth as clientAuth } from '@/firebase/client';
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+} from 'firebase/auth';
+import { AppEvents } from '@/lib/services/app-events.service';
 import { SignInParams, SignUpParams, User } from '@/types';
 import { cookies } from 'next/headers';
+import { unstable_cache } from 'next/cache';
 
 const ONE_WEEK = 60 * 60 * 24 * 7;
 
@@ -12,6 +19,9 @@ export async function signUp(params: SignUpParams) {
   try {
     const userRecord = await db.collection('users').doc(uid).get();
     if (userRecord.exists) {
+      await AppEvents.trackError(new Error('User already exists'), {
+        context: 'signup',
+      });
       return {
         success: false,
         message: 'User already exists. Please sign in instead.',
@@ -23,12 +33,14 @@ export async function signUp(params: SignUpParams) {
       email,
     });
 
+    await AppEvents.trackSignUp('email');
     return {
       success: true,
       message: 'Account created successfully. Please sign in.',
     };
   } catch (error: unknown) {
     console.error('Error creating a user:', error);
+    await AppEvents.trackError(error as Error, { context: 'signup' });
 
     if ((error as { code: string }).code === 'auth/email-already-exists') {
       return {
@@ -48,10 +60,12 @@ export async function signIn(params: SignInParams) {
   const { email, idToken } = params;
 
   try {
-    const userRecord = await auth.getUserByEmail(email);
+    const userRecord = await adminAuth.getUserByEmail(email);
 
     if (!userRecord) {
-      console.log('User does not exist.');
+      await AppEvents.trackError(new Error('User does not exist'), {
+        context: 'signin',
+      });
       return {
         success: false,
         message: 'User does not exist. Please create an account instead.',
@@ -59,6 +73,7 @@ export async function signIn(params: SignInParams) {
     }
 
     await setSessionCookie(idToken);
+    await AppEvents.trackLogin('email');
 
     return {
       success: true,
@@ -66,6 +81,7 @@ export async function signIn(params: SignInParams) {
     };
   } catch (error: unknown) {
     console.error('Error signing in:', error);
+    await AppEvents.trackError(error as Error, { context: 'signin' });
 
     if ((error as { code?: string }).code === 'auth/invalid-id-token') {
       return {
@@ -84,6 +100,14 @@ export async function signIn(params: SignInParams) {
 export async function signOut() {
   const cookieStore = await cookies();
   cookieStore.delete('session');
+
+  try {
+    await clientAuth.signOut();
+    await AppEvents.trackLogout();
+  } catch (error) {
+    await AppEvents.trackError(error as Error, { context: 'signout' });
+    throw error;
+  }
 
   return {
     success: true,
@@ -120,6 +144,7 @@ export async function signInWithGoogle(params: {
     }
 
     await setSessionCookie(idToken);
+    await AppEvents.trackLogin('google');
 
     return {
       success: true,
@@ -127,6 +152,7 @@ export async function signInWithGoogle(params: {
     };
   } catch (error) {
     console.error('Error handling Google sign-in:', error);
+    await AppEvents.trackError(error as Error, { context: 'google_signin' });
     return {
       success: false,
       message: 'Failed to authenticate with Google. Please try again.',
@@ -134,10 +160,40 @@ export async function signInWithGoogle(params: {
   }
 }
 
+export async function signInWithEmail(email: string, password: string) {
+  try {
+    const result = await signInWithEmailAndPassword(
+      clientAuth,
+      email,
+      password
+    );
+    await AppEvents.trackLogin('email');
+    return result.user;
+  } catch (error) {
+    await AppEvents.trackError(error as Error, { context: 'email_signin' });
+    throw error;
+  }
+}
+
+export async function signUpWithEmail(email: string, password: string) {
+  try {
+    const result = await createUserWithEmailAndPassword(
+      clientAuth,
+      email,
+      password
+    );
+    await AppEvents.trackSignUp('email');
+    return result.user;
+  } catch (error) {
+    await AppEvents.trackError(error as Error, { context: 'email_signup' });
+    throw error;
+  }
+}
+
 export async function setSessionCookie(idToken: string) {
   const cookieStore = await cookies();
 
-  const sessionCookie = await auth.createSessionCookie(idToken, {
+  const sessionCookie = await adminAuth.createSessionCookie(idToken, {
     expiresIn: ONE_WEEK * 1000, // 7 days
   });
 
@@ -166,7 +222,10 @@ export async function getCurrentUser(): Promise<User | null> {
   if (!sessionCookie) return null;
 
   try {
-    const decodedClaims = await auth.verifySessionCookie(sessionCookie, true);
+    const decodedClaims = await adminAuth.verifySessionCookie(
+      sessionCookie,
+      true
+    );
     return await _fetchUserFromDB(decodedClaims.uid);
   } catch (error) {
     console.error('Error fetching user:', error);
@@ -188,3 +247,20 @@ export async function getUserById(id: string): Promise<User | null> {
     id: userRecord.id,
   } as User;
 }
+
+export const getCachedUserById = unstable_cache(
+  async (id: string) => {
+    try {
+      const user = await getUserById(id);
+      return user;
+    } catch (error) {
+      console.error('Error fetching user:', error);
+      return null;
+    }
+  },
+  ['user-by-id'],
+  {
+    revalidate: 60, // Cache for 60 seconds
+    tags: ['user']
+  }
+);

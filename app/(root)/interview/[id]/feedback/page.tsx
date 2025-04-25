@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useParams } from 'next/navigation';
 import useSWR from 'swr';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 import {
   getFeedbackByInterviewId,
@@ -15,6 +15,7 @@ import { getCurrentUser } from '@/lib/actions/auth.action';
 import SpinnerLoader from '@/components/ui/loader';
 import { Button } from '@/components/ui/button';
 import { Feedback } from '@/types';
+import { AppEvents } from '@/lib/services/app-events.service';
 
 const FeedbackPage = () => {
   const params = useParams();
@@ -44,6 +45,26 @@ const FeedbackPage = () => {
 
   const isLoading = isUserLoading || isFeedbackLoading || isInterviewLoading;
 
+  useEffect(() => {
+    if (interview && feedbacks) {
+      AppEvents.trackPageView('interview_feedback', {
+        interview_id: id,
+        feedback_count: feedbacks.length,
+        interview_type: interview.type,
+        interview_level: interview.level,
+      });
+
+      // Track feedback view for each feedback
+      feedbacks.forEach((feedback) => {
+        AppEvents.trackFeedbackView(id, feedback.id, {
+          interview_type: interview.type,
+          interview_level: interview.level,
+          feedback_score: feedback.totalScore,
+        });
+      });
+    }
+  }, [interview, feedbacks, id]);
+
   if (isLoading) return <SpinnerLoader />;
   if (!interview || !feedbacks) return null;
 
@@ -51,7 +72,12 @@ const FeedbackPage = () => {
     <div
       key={feedback.id}
       className='p-6 rounded-lg border border-primary-200/10 bg-dark-200/30 hover:border-primary-200/30 transition-all duration-300 cursor-pointer'
-      onClick={() => setSelectedFeedback(feedback)}
+      onClick={() => {
+        setSelectedFeedback(feedback);
+        AppEvents.trackFeedbackInteraction(id, feedback.id, 'view_details', {
+          feedback_score: feedback.totalScore,
+        });
+      }}
     >
       <div className='flex flex-row gap-5 mb-4'>
         <div className='flex flex-row gap-2 items-center'>
@@ -139,7 +165,15 @@ const FeedbackPage = () => {
       </div>
 
       <div className='buttons'>
-        <Button className='btn-secondary flex-1'>
+        <Button 
+          className='btn-secondary flex-1'
+          onClick={() => {
+            AppEvents.trackButtonClick('back_to_dashboard', 'feedback_page', {
+              interview_id: id,
+              feedback_id: feedback.id,
+            });
+          }}
+        >
           <Link href='/' className='flex w-full justify-center'>
             <p className='text-sm font-semibold text-primary-200 text-center'>
               Back to dashboard
@@ -147,7 +181,15 @@ const FeedbackPage = () => {
           </Link>
         </Button>
 
-        <Button className='btn-primary flex-1'>
+        <Button 
+          className='btn-primary flex-1'
+          onClick={() => {
+            AppEvents.trackButtonClick('retake_interview', 'feedback_page', {
+              interview_id: id,
+              feedback_id: feedback.id,
+            });
+          }}
+        >
           <Link
             href={`/interview/${interview.id}`}
             className='flex w-full justify-center'

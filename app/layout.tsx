@@ -3,6 +3,7 @@ import { Mona_Sans } from 'next/font/google';
 import './globals.css';
 import { Providers } from '@/components/providers';
 import Link from 'next/link';
+import { generatePageTitle } from '@/lib/seo';
 
 const monaSans = Mona_Sans({
   variable: '--font-mona-sans',
@@ -10,7 +11,10 @@ const monaSans = Mona_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'CareerPilot',
+  title: {
+    default: generatePageTitle(),
+    template: '%s | CareerPilot',
+  },
   description: 'An AI-powered platform for preparing for mock interviews.',
 };
 

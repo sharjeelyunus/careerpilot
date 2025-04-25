@@ -11,6 +11,7 @@ import React, { useEffect, useState } from 'react';
 import SpinnerLoader from './ui/loader';
 import useSWR from 'swr';
 import { AgentProps } from '@/types';
+import { AppEvents } from '@/lib/services/app-events.service';
 
 enum CallStatus {
   INACTIVE = 'INACTIVE',
@@ -39,6 +40,7 @@ const Agent = ({
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [callStatus, setCallStatus] = useState<CallStatus>(CallStatus.INACTIVE);
   const [messages, setMessages] = useState<SavedMessage[]>([]);
+  const [callStartTime, setCallStartTime] = useState(0);
 
   useEffect(() => {
     // Check if EchoPilot token is available
@@ -113,20 +115,44 @@ const Agent = ({
     }
   }, [messages, callStatus, type, userId, router, interviewId]);
 
+  useEffect(() => {
+    // Track interview start
+    if (callStatus === CallStatus.ACTIVE && interviewId) {
+      AppEvents.trackUserEngagement('interview_start', 0, {
+        interview_id: interviewId,
+        type: type || 'unknown',
+        question_count: questions?.length || 0,
+      });
+    }
+
+    // Track interview end
+    if (callStatus === CallStatus.FINISHED && interviewId) {
+      const duration = Math.floor((Date.now() - callStartTime) / 1000);
+      AppEvents.trackUserEngagement('interview_end', duration, {
+        interview_id: interviewId,
+        type: type || 'unknown',
+        question_count: questions?.length || 0,
+      });
+    }
+  }, [callStatus, interviewId, type, questions, callStartTime]);
+
   const handleCall = async () => {
     setCallStatus(CallStatus.CONNECTING);
     const cleanQuestion = (question: string) => {
       return question.replace(/\*\*/g, '');
     };
     try {
-      if (type === 'generate') {
+      if (type === 'generate' && interviewId) {
+        await AppEvents.trackFeatureUsage('interview', 'start_generation', {
+          interview_id: interviewId,
+        });
         await echoPilot.start(process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!, {
           variableValues: {
             username: user?.name || '',
             userid: user?.id || '',
           },
         });
-      } else {
+      } else if (interviewId) {
         let formattedQuestions = '';
         if (questions) {
           formattedQuestions = questions
@@ -134,20 +160,39 @@ const Agent = ({
             .join('\n');
         }
 
+        await AppEvents.trackFeatureUsage('interview', 'start_interview', {
+          interview_id: interviewId,
+          question_count: questions?.length || 0,
+        });
+        
         await echoPilot.start(interviewer, {
           variableValues: {
             questions: formattedQuestions,
           },
         });
       }
+      setCallStartTime(Date.now());
     } catch (error) {
       console.error('Error starting call:', error);
+      await AppEvents.trackError(error as Error, { 
+        context: 'interview_call_start',
+        interview_id: interviewId || 'unknown',
+        type: type || 'unknown',
+      });
       setCallStatus(CallStatus.INACTIVE);
     }
   };
 
   const handleDisconnectCall = async () => {
     setCallStatus(CallStatus.FINISHED);
+    const duration = Math.floor((Date.now() - callStartTime) / 1000);
+    if (interviewId) {
+      await AppEvents.trackFeatureUsage('interview', 'end_interview', {
+        interview_id: interviewId,
+        duration,
+        type: type || 'unknown',
+      });
+    }
     echoPilot.stop();
   };
 

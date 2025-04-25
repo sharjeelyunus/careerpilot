@@ -1,4 +1,6 @@
 import { Interview } from '@/types';
+import { getAnalytics, logEvent } from 'firebase/analytics';
+import { app } from '@/firebase/client';
 
 // Helper function to get ISO week number
 function getWeekNumber(date: Date): number {
@@ -338,4 +340,64 @@ function generateTechStackFrequency(
   return Object.entries(frequency)
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => b.count - a.count); // Sort by count descending
+}
+
+// New analytics events
+export async function trackUserAction(action: string, params?: Record<string, string | number | boolean>) {
+  try {
+    const analytics = getAnalytics(app);
+    logEvent(analytics, action, {
+      timestamp: new Date().toISOString(),
+      ...params,
+    });
+  } catch (error) {
+    console.error('Error tracking user action:', error);
+  }
+}
+
+export async function trackInterviewStart(interviewId: string, type: string, difficulty: string) {
+  await trackUserAction('interview_start', {
+    interview_id: interviewId,
+    interview_type: type,
+    difficulty_level: difficulty,
+  });
+}
+
+export async function trackInterviewComplete(interviewId: string, score: number, duration: number) {
+  await trackUserAction('interview_complete', {
+    interview_id: interviewId,
+    score,
+    duration_seconds: duration,
+  });
+}
+
+export async function trackQuestionAttempt(interviewId: string, questionId: string, timeSpent: number, correct: boolean) {
+  await trackUserAction('question_attempt', {
+    interview_id: interviewId,
+    question_id: questionId,
+    time_spent_seconds: timeSpent,
+    is_correct: correct,
+  });
+}
+
+export async function trackUserEngagement(feature: string, action: string, duration?: number) {
+  await trackUserAction('user_engagement', {
+    feature,
+    action,
+    ...(duration !== undefined && { duration_seconds: duration }),
+  });
+}
+
+export async function trackUserFeedback(rating: number, feedback?: string) {
+  await trackUserAction('user_feedback', {
+    rating,
+    ...(feedback && { feedback }),
+  });
+}
+
+export async function trackUserProgress(milestone: string, value: number) {
+  await trackUserAction('user_progress', {
+    milestone,
+    value,
+  });
 }

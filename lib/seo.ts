@@ -69,4 +69,9 @@ export function generateSitemap(pages: { url: string; lastModified?: string }[])
     )
     .join('')}
 </urlset>`
+}
+
+export function generatePageTitle(title?: string) {
+  const baseTitle = 'CareerPilot';
+  return title ? `${title} | ${baseTitle}` : baseTitle;
 } 
