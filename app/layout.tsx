@@ -4,6 +4,7 @@ import './globals.css';
 import { Providers } from '@/components/providers';
 import Link from 'next/link';
 import { generatePageTitle } from '@/lib/seo';
+import { FloatingFeedbackButton } from '@/components/feedback/floating-feedback-button';
 
 const monaSans = Mona_Sans({
   variable: '--font-mona-sans',
@@ -50,6 +51,7 @@ export default function RootLayout({
             </Link>
           </p>
         </footer>
+        <FloatingFeedbackButton />
       </body>
     </html>
   );
