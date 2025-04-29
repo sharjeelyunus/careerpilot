@@ -25,7 +25,7 @@ export const submitFeedback = async (feedback: Omit<Feedback, 'id' | 'createdAt'
       updatedAt: Timestamp.now(),
     };
 
-    const feedbackRef = collection(db, 'feedback');
+    const feedbackRef = collection(db, 'users-feedback');
     const docRef = await addDoc(feedbackRef, feedbackData);
     return { id: docRef.id, ...feedbackData };
   } catch (error) {
@@ -36,7 +36,7 @@ export const submitFeedback = async (feedback: Omit<Feedback, 'id' | 'createdAt'
 
 export const getFeedbackByUser = async (userId: string) => {
   try {
-    const feedbackRef = collection(db, 'feedback');
+    const feedbackRef = collection(db, 'users-feedback');
     const q = query(
       feedbackRef,
       where('userId', '==', userId),
