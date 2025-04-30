@@ -63,7 +63,8 @@ export function InterviewSuggestions({ userId }: { userId: string }) {
       const data = await response.json();
 
       if (!data.success) {
-        throw new Error(data.error || 'Failed to fetch suggestions');
+        console.error('Error fetching suggestions:', data.error);
+        throw new Error('No suggestions available at the moment');
       }
 
       return data.suggestions;

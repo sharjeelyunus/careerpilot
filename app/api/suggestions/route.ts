@@ -2,38 +2,40 @@ import { generateText } from 'ai';
 import { google } from '@ai-sdk/google';
 import { getUserById } from '@/lib/actions/auth.action';
 import { getInterviewByUserId } from '@/lib/actions/general.action';
+import { Feedback } from '@/types';
 
-export async function POST(request: Request) {
-  const { userId } = await request.json();
+interface UserData {
+  skills: string[];
+  bio: string;
+  experience: string;
+  preferredRoles: string[];
+  completedInterviews: Array<{
+    role: string;
+    level: string;
+    techstack: string[];
+    type: string;
+    feedbacks: Feedback[] | null;
+  }>;
+}
 
+interface ApiError extends Error {
+  statusCode?: number;
+  message: string;
+}
+
+interface Suggestion {
+  role: string;
+  type: string;
+  level: string;
+  techstack: string;
+  amount: number;
+}
+
+const MAX_RETRIES = 5;
+const INITIAL_RETRY_DELAY = 1000; // 1 second
+
+async function generateSuggestionsWithRetry(userData: UserData, retryCount = 0): Promise<Suggestion[]> {
   try {
-    // Get user data
-    const user = await getUserById(userId);
-    if (!user) {
-      return Response.json(
-        { success: false, error: 'User not found' },
-        { status: 404 }
-      );
-    }
-
-    const { interviews } = await getInterviewByUserId(userId, 1, 10000);
-
-    // Prepare user data for Gemini
-    const userData = {
-      skills: user.skills || [],
-      bio: user.bio,
-      experience: user.experience,
-      preferredRoles: user.preferredRoles || [],
-      completedInterviews: interviews.map(interview => ({
-        role: interview.role,
-        level: interview.level,
-        techstack: interview.techstack,
-        type: interview.type,
-        feedbacks: interview.feedbacks
-      }))
-    };
-
-    // Generate suggestions using Gemini
     const { text: suggestions } = await generateText({
       model: google('gemini-2.0-flash-001'),
       prompt: `As an expert career advisor, create a diverse set of interview suggestions to help the user advance in their career. The suggestions should follow a clear progression path and cover different aspects of development.
@@ -52,13 +54,6 @@ export async function POST(request: Request) {
       4. Include varying complexity levels
       5. Focus on different skill aspects (coding, system design, leadership)
       6. Suggest complementary tech stacks
-
-      Guidelines for diversity:
-      - Roles: Include different positions (Developer, Engineer, Architect, Lead)
-      - Types: Balance between technical and behavioral
-      - Levels: Mix of Junior, Mid, Senior positions
-      - Tech Stacks: Combine core technologies with specialized ones
-      - Questions: Vary the number based on interview complexity (5-8 questions)
 
       Return ONLY a valid JSON array of objects in this exact format:
       [
@@ -80,28 +75,83 @@ export async function POST(request: Request) {
     
     try {
       const parsedSuggestions = JSON.parse(cleanedSuggestions);
-      return Response.json(
-        { success: true, suggestions: parsedSuggestions },
-        { status: 200 }
-      );
+      return parsedSuggestions;
     } catch (parseError) {
       console.error('Failed to parse suggestions:', parseError);
       console.error('Raw suggestions:', suggestions);
+      throw new Error('Failed to parse suggestions from AI response');
+    }
+  } catch (error: unknown) {
+    const apiError = error as ApiError;
+    if (apiError.statusCode === 503 && retryCount < MAX_RETRIES) {
+      const delay = INITIAL_RETRY_DELAY * Math.pow(2, retryCount);
+      console.log(`Retrying after ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRIES})`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return generateSuggestionsWithRetry(userData, retryCount + 1);
+    }
+    
+    // If we've exhausted all retries or it's a different error, throw
+    throw error;
+  }
+}
+
+export async function POST(request: Request) {
+  const { userId } = await request.json();
+
+  try {
+    // Get user data
+    const user = await getUserById(userId);
+    if (!user) {
       return Response.json(
-        { success: false, error: 'Failed to parse suggestions' },
-        { status: 500 }
+        { success: false, error: 'User not found' },
+        { status: 404 }
       );
     }
-  } catch (error) {
-    console.error(error);
+
+    const { interviews } = await getInterviewByUserId(userId, 1, 10000);
+
+    // Prepare user data for Gemini
+    const userData: UserData = {
+      skills: user.skills || [],
+      bio: user.bio || '',
+      experience: user.experience || '',
+      preferredRoles: user.preferredRoles || [],
+      completedInterviews: interviews.map(interview => ({
+        role: interview.role,
+        level: interview.level,
+        techstack: interview.techstack,
+        type: interview.type,
+        feedbacks: interview.feedbacks || null
+      }))
+    };
+
+    // Generate suggestions using Gemini with retry mechanism
+    const suggestions = await generateSuggestionsWithRetry(userData);
+
+    return Response.json({ success: true, suggestions });
+  } catch (error: unknown) {
+    console.error('Error generating suggestions:', error);
+    const apiError = error as ApiError;
+    
+    // Return a more specific error message based on the error type
+    if (apiError.statusCode === 503) {
+      return Response.json(
+        { 
+          success: false, 
+          error: 'The AI service is currently experiencing high demand. Please try again in a few moments.',
+          retryAfter: 30 // Suggest retrying after 30 seconds
+        },
+        { status: 503 }
+      );
+    }
+
     return Response.json(
-      {
-        success: false,
-        error: error,
+      { 
+        success: false, 
+        error: 'Failed to generate suggestions. Please try again later.',
+        details: apiError.message
       },
-      {
-        status: 500,
-      }
+      { status: 500 }
     );
   }
 } 
