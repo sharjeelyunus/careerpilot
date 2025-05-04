@@ -8,9 +8,10 @@ Disallow: /_error
 Disallow: /signin
 Disallow: /signup
 Disallow: /api-doc
+Disallow: /interview
 
 # Host
-Host: https://careerpilotai.dev
+Host: https://careerpilot.dev
 
 # Sitemaps
-Sitemap: https://careerpilotai.dev/sitemap.xml
+Sitemap: https://careerpilot.dev/sitemap.xml

@@ -1,6 +1,6 @@
 /** @type {import('next-sitemap').IConfig} */
 module.exports = {
-  siteUrl: process.env.SITE_URL || 'https://careerpilotai.dev',
+  siteUrl: process.env.SITE_URL || 'https://careerpilot.dev',
   generateRobotsTxt: true,
   generateIndexSitemap: false,
   changefreq: 'daily',
@@ -16,7 +16,8 @@ module.exports = {
     '/signup',
     '/api-doc',
     '/terms',
-    '/privacy'
+    '/privacy',
+    '/interview',
   ],
   robotsTxtOptions: {
     policies: [
@@ -30,7 +31,8 @@ module.exports = {
           '/_error',
           '/signin',
           '/signup',
-          '/api-doc'
+          '/api-doc',
+          '/interview',
         ],
       },
     ],
@@ -43,7 +45,6 @@ module.exports = {
       '/contact': 0.8,
       '/challenges': 0.9,
       '/leaderboard': 0.9,
-      '/interview': 0.9,
       '/interview-history': 0.8,
       '/features': 0.9,
       '/pricing': 0.9,
@@ -53,7 +54,7 @@ module.exports = {
     };
 
     // Define paths that should update daily
-    const dailyUpdatePaths = ['/', '/challenges', '/leaderboard', '/interview'];
+    const dailyUpdatePaths = ['/', '/challenges', '/leaderboard'];
     const weeklyUpdatePaths = ['/interview-history', '/profile'];
 
     return {
