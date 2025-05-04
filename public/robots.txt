@@ -1,0 +1,16 @@
+# *
+User-agent: *
+Allow: /
+Disallow: /api/*
+Disallow: /404
+Disallow: /500
+Disallow: /_error
+Disallow: /signin
+Disallow: /signup
+Disallow: /api-doc
+
+# Host
+Host: https://careerpilotai.dev
+
+# Sitemaps
+Sitemap: https://careerpilotai.dev/sitemap.xml
