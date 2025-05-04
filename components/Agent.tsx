@@ -2,6 +2,7 @@
 
 import { interviewer } from '@/constants';
 import { getCurrentUser } from '@/lib/actions/auth.action';
+import Controls from '@/components/Controls';
 import { createFeedback } from '@/lib/actions/general.action';
 import { cn } from '@/lib/utils';
 import { echoPilot } from '@/lib/echoPilot.sdk';
@@ -52,7 +53,8 @@ const Agent = ({
     const onCallStart = () => setCallStatus(CallStatus.ACTIVE);
     const onCallEnd = () => setCallStatus(CallStatus.INACTIVE);
 
-    const onMessage = (message: Message) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const onMessage = (message: any) => {
       if (message.type === 'transcript' && message.transcriptType === 'final') {
         const newMessage = {
           role: message.role,
@@ -164,7 +166,7 @@ const Agent = ({
           interview_id: interviewId,
           question_count: questions?.length || 0,
         });
-        
+
         await echoPilot.start(interviewer, {
           variableValues: {
             questions: formattedQuestions,
@@ -174,7 +176,7 @@ const Agent = ({
       setCallStartTime(Date.now());
     } catch (error) {
       console.error('Error starting call:', error);
-      await AppEvents.trackError(error as Error, { 
+      await AppEvents.trackError(error as Error, {
         context: 'interview_call_start',
         interview_id: interviewId || 'unknown',
         type: type || 'unknown',
@@ -197,9 +199,6 @@ const Agent = ({
   };
 
   const latestMessage = messages[messages.length - 1]?.content;
-
-  const isCallInactiveOrFinished =
-    callStatus === CallStatus.INACTIVE || callStatus === CallStatus.FINISHED;
 
   if (isLoading) {
     return <SpinnerLoader />;
@@ -250,21 +249,14 @@ const Agent = ({
         </div>
       )}
       <div className='w-full flex justify-center'>
-        {callStatus !== CallStatus.ACTIVE ? (
-          <button className='relative btn-call' onClick={handleCall}>
-            <span
-              className={cn(
-                'absolute animate-ping rounded-full opacity-75',
-                callStatus !== CallStatus.CONNECTING && 'hidden'
-              )}
-            />
-            <span>{isCallInactiveOrFinished ? 'Call' : '...'}</span>
-          </button>
-        ) : (
-          <button className='btn-disconnect' onClick={handleDisconnectCall}>
-            End
-          </button>
-        )}
+        <Controls
+          agent={echoPilot}
+          isLoading={callStatus === CallStatus.CONNECTING}
+          isConnected={callStatus === CallStatus.ACTIVE}
+          onStartCall={handleCall}
+          onStopCall={handleDisconnectCall}
+          disabled={false}
+        />
       </div>
     </>
   );
